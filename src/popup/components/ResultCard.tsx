@@ -5,9 +5,9 @@ import { Copy, Check } from 'lucide-react'
 import { ResultCardProps } from '@/types'
 
 const TONE_LABELS = {
-  formal: '격식',
-  general: '일반',
-  friendly: '친근'
+  formal: '비즈니스 이메일',
+  general: '사내 메신저',
+  friendly: '캐주얼 채팅'
 }
 
 const ResultCard: React.FC<ResultCardProps> = ({

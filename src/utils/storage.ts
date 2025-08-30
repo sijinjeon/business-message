@@ -10,7 +10,9 @@ const DEFAULT_STORAGE: AppStorage = {
   settings: {
     preferredModel: 'gemini-2.0-flash-exp',
     temperature: 0.7,
-    maxOutputTokens: 1024
+    maxOutputTokens: 1024,
+    autoCopyEnabled: true,
+    autoCopyTone: 'formal'
   }
 }
 
@@ -93,8 +95,50 @@ export async function getRemainingUsage(): Promise<number> {
   const today = new Date().toISOString().split('T')[0]
   
   if (data.dailyUsage.date !== today) {
-    return 5 // 새로운 날이면 5회 모두 사용 가능
+    return 50 // 새로운 날이면 50회 모두 사용 가능
   }
   
-  return Math.max(0, 5 - data.dailyUsage.count)
+  return Math.max(0, 50 - data.dailyUsage.count)
+}
+
+/**
+ * 자동 복사 설정을 가져옵니다
+ */
+export async function getAutoCopyEnabled(): Promise<boolean> {
+  const data = await getStorageData()
+  return data.settings.autoCopyEnabled
+}
+
+/**
+ * 자동 복사 설정을 저장합니다
+ */
+export async function setAutoCopyEnabled(enabled: boolean): Promise<void> {
+  const data = await getStorageData()
+  await setStorageData({
+    settings: {
+      ...data.settings,
+      autoCopyEnabled: enabled
+    }
+  })
+}
+
+/**
+ * 자동 복사 톤을 가져옵니다
+ */
+export async function getAutoCopyTone(): Promise<'formal' | 'general' | 'friendly'> {
+  const data = await getStorageData()
+  return data.settings.autoCopyTone
+}
+
+/**
+ * 자동 복사 톤을 저장합니다
+ */
+export async function setAutoCopyTone(tone: 'formal' | 'general' | 'friendly'): Promise<void> {
+  const data = await getStorageData()
+  await setStorageData({
+    settings: {
+      ...data.settings,
+      autoCopyTone: tone
+    }
+  })
 }

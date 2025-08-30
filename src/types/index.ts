@@ -9,6 +9,8 @@ export interface AppStorage {
     preferredModel: 'gemini-2.0-flash-exp';
     temperature: number; // 0.1 ~ 1.0
     maxOutputTokens: number; // 기본 1024
+    autoCopyEnabled: boolean; // 자동 클립보드 복사 여부
+    autoCopyTone: 'formal' | 'general' | 'friendly'; // 자동 복사할 톤
   };
 }
 
@@ -56,6 +58,7 @@ export interface TextInputProps {
 
 export interface ActionBarProps {
   onRegenerate: () => void;
+  onReadClipboard: () => void;
   remainingCount: number;
   isLoading: boolean;
   onOpenSettings: () => void;
@@ -68,6 +71,7 @@ export interface AppState {
   inputText: string;
   results: GeminiApiResponse | null;
   loadingState: LoadingState;
-  errorMessage: string;
+  message: string;
+  messageType: 'error' | 'success' | '';
   remainingUsage: number;
 }

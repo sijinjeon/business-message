@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectItem } from '@/components/ui/select'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
-import { saveApiKey, getApiKey } from '@/utils/storage'
+import { saveApiKey, getApiKey, getAutoCopyEnabled, setAutoCopyEnabled, getAutoCopyTone, setAutoCopyTone } from '@/utils/storage'
 import { validateApiKey } from '@/utils/api'
 
 type ValidationState = 'idle' | 'testing' | 'success' | 'error'
@@ -14,19 +16,26 @@ function Settings() {
   const [validationState, setValidationState] = useState<ValidationState>('idle')
   const [message, setMessage] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [autoCopyEnabled, setAutoCopyEnabledState] = useState(true)
+  const [autoCopyTone, setAutoCopyToneState] = useState<'formal' | 'general' | 'friendly'>('formal')
   
   useEffect(() => {
-    loadApiKey()
+    loadSettings()
   }, [])
   
-  const loadApiKey = async () => {
+  const loadSettings = async () => {
     try {
       const savedKey = await getApiKey()
+      const autoCopy = await getAutoCopyEnabled()
+      const copyTone = await getAutoCopyTone()
+      
       if (savedKey) {
         setApiKey(savedKey)
       }
+      setAutoCopyEnabledState(autoCopy)
+      setAutoCopyToneState(copyTone)
     } catch (error) {
-      console.error('Failed to load API key:', error)
+      console.error('Failed to load settings:', error)
     }
   }
   
@@ -65,12 +74,33 @@ function Settings() {
     
     try {
       await saveApiKey(apiKey.trim())
-      setMessage('API 키가 저장되었습니다.')
+      await setAutoCopyEnabled(autoCopyEnabled)
+      await setAutoCopyTone(autoCopyTone)
+      setMessage('설정이 저장되었습니다.')
       setTimeout(() => setMessage(''), 3000)
     } catch (error) {
       setMessage('저장 중 오류가 발생했습니다.')
     } finally {
       setIsSaving(false)
+    }
+  }
+  
+  const handleAutoCopyToggle = async (enabled: boolean) => {
+    setAutoCopyEnabledState(enabled)
+    try {
+      await setAutoCopyEnabled(enabled)
+    } catch (error) {
+      console.error('Failed to save auto copy setting:', error)
+    }
+  }
+  
+  const handleAutoCopyToneChange = async (value: string) => {
+    const tone = value as 'formal' | 'general' | 'friendly'
+    setAutoCopyToneState(tone)
+    try {
+      await setAutoCopyTone(tone)
+    } catch (error) {
+      console.error('Failed to save auto copy tone:', error)
     }
   }
   
@@ -138,6 +168,49 @@ function Settings() {
                 <AlertDescription>{message}</AlertDescription>
               </div>
             </Alert>
+          )}
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>자동 복사 설정</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-3">
+            <Checkbox
+              id="auto-copy"
+              checked={autoCopyEnabled}
+              onCheckedChange={handleAutoCopyToggle}
+            />
+            <div className="space-y-1">
+              <label 
+                htmlFor="auto-copy" 
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                변환 완료 시 결과를 자동으로 클립보드에 복사
+              </label>
+              <p className="text-xs text-muted-foreground">
+                활성화하면 변환이 완료될 때 선택한 톤의 결과가 자동으로 클립보드에 복사됩니다.
+              </p>
+            </div>
+          </div>
+          
+          {autoCopyEnabled && (
+            <div className="space-y-2 ml-7">
+              <label className="text-sm font-medium">자동 복사할 톤 선택</label>
+              <Select
+                value={autoCopyTone}
+                onValueChange={handleAutoCopyToneChange}
+              >
+                <SelectItem value="formal">비즈니스 이메일</SelectItem>
+                <SelectItem value="general">사내 메신저</SelectItem>
+                <SelectItem value="friendly">캐주얼 채팅</SelectItem>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                변환 완료 시 선택한 톤의 결과가 자동으로 클립보드에 복사됩니다.
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>
