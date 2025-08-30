@@ -6,21 +6,19 @@ import manifest from './manifest.json'
 export default defineConfig({
   plugins: [
     react(),
-    crx({ manifest })
-  ],
-  build: {
-    rollupOptions: {
-      input: {
-        popup: 'src/popup/index.html',
-        options: 'src/options/index.html'
-      },
-      output: {
-        manualChunks: undefined, // Chrome Extension에서는 단일 청크 권장
+    crx({ 
+      manifest,
+      contentScripts: {
+        injectCss: true,
       }
-    },
-    target: 'esnext',
+    })
+  ],
+  base: '', // 빈 문자열로 설정하여 절대 경로 문제 해결
+  build: {
+    target: 'es2020', // 더 호환성 있는 타겟으로 변경
     minify: 'terser',
     sourcemap: false, // 프로덕션에서는 소스맵 제거
+    assetsDir: 'assets', // 에셋 디렉토리 명시적 지정
     terserOptions: {
       compress: {
         drop_console: true, // console.log 제거
@@ -35,5 +33,10 @@ export default defineConfig({
   },
   define: {
     __DEV__: process.env.NODE_ENV === 'development'
+  },
+  server: {
+    hmr: {
+      port: 5174 // Chrome Extension 개발 시 HMR 포트
+    }
   }
 })
