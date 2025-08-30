@@ -1,6 +1,4 @@
-import { GeminiApiRequest, GeminiApiResponse } from '@/types'
-
-const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent'
+import { AIApiResponse, AIProvider, GeminiApiRequest, OpenAIApiRequest, ClaudeApiRequest } from '@/types'
 
 /**
  * 시스템 프롬프트 생성
@@ -32,9 +30,9 @@ ${userText}`
 }
 
 /**
- * API 요청 페이로드 생성
+ * Gemini API 요청 페이로드 생성
  */
-function createApiPayload(userText: string): GeminiApiRequest {
+function createGeminiPayload(userText: string): GeminiApiRequest {
   return {
     contents: [{
       parts: [{
@@ -62,9 +60,43 @@ function createApiPayload(userText: string): GeminiApiRequest {
 }
 
 /**
+ * OpenAI API 요청 페이로드 생성
+ */
+function createOpenAIPayload(userText: string): OpenAIApiRequest {
+  return {
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "user",
+        content: createSystemPrompt(userText)
+      }
+    ],
+    temperature: 0.7,
+    max_tokens: 1024
+  }
+}
+
+/**
+ * Claude API 요청 페이로드 생성
+ */
+function createClaudePayload(userText: string): ClaudeApiRequest {
+  return {
+    model: "claude-3-5-haiku-20241022",
+    max_tokens: 1024,
+    temperature: 0.7,
+    messages: [
+      {
+        role: "user",
+        content: createSystemPrompt(userText)
+      }
+    ]
+  }
+}
+
+/**
  * API 응답에서 JSON 추출
  */
-function extractJsonFromResponse(text: string): GeminiApiResponse {
+function extractJsonFromResponse(text: string): AIApiResponse {
   // JSON 블록 찾기
   const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/)
   
@@ -92,9 +124,121 @@ function extractJsonFromResponse(text: string): GeminiApiResponse {
 }
 
 /**
- * 텍스트를 세 가지 톤으로 변환
+ * Gemini API 호출
  */
-export async function convertText(userText: string, apiKey: string): Promise<GeminiApiResponse> {
+async function callGeminiAPI(userText: string, apiKey: string): Promise<AIApiResponse> {
+  const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent'
+  const payload = createGeminiPayload(userText)
+  
+  const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload)
+  })
+  
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Gemini API 키가 유효하지 않습니다. 설정 페이지에서 확인해주세요.')
+    } else if (response.status >= 500) {
+      throw new Error('Gemini 서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.')
+    } else {
+      throw new Error(`Gemini API 호출 실패 (${response.status})`)
+    }
+  }
+  
+  const data = await response.json()
+  
+  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+    throw new Error('Gemini API 응답이 예상과 다릅니다.')
+  }
+  
+  const responseText = data.candidates[0].content.parts[0].text
+  return extractJsonFromResponse(responseText)
+}
+
+/**
+ * OpenAI API 호출
+ */
+async function callOpenAIAPI(userText: string, apiKey: string): Promise<AIApiResponse> {
+  const API_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
+  const payload = createOpenAIPayload(userText)
+  
+  const response = await fetch(API_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(payload)
+  })
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('OpenAI API 키가 유효하지 않습니다. 설정 페이지에서 확인해주세요.')
+    } else if (response.status === 429) {
+      throw new Error('OpenAI API 사용량 한도에 도달했습니다. 잠시 후 다시 시도해주세요.')
+    } else if (response.status >= 500) {
+      throw new Error('OpenAI 서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.')
+    } else {
+      throw new Error(`OpenAI API 호출 실패 (${response.status})`)
+    }
+  }
+  
+  const data = await response.json()
+  
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    throw new Error('OpenAI API 응답이 예상과 다릅니다.')
+  }
+  
+  const responseText = data.choices[0].message.content
+  return extractJsonFromResponse(responseText)
+}
+
+/**
+ * Claude API 호출
+ */
+async function callClaudeAPI(userText: string, apiKey: string): Promise<AIApiResponse> {
+  const API_ENDPOINT = 'https://api.anthropic.com/v1/messages'
+  const payload = createClaudePayload(userText)
+  
+  const response = await fetch(API_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify(payload)
+  })
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Claude API 키가 유효하지 않습니다. 설정 페이지에서 확인해주세요.')
+    } else if (response.status === 429) {
+      throw new Error('Claude API 사용량 한도에 도달했습니다. 잠시 후 다시 시도해주세요.')
+    } else if (response.status >= 500) {
+      throw new Error('Claude 서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.')
+    } else {
+      throw new Error(`Claude API 호출 실패 (${response.status})`)
+    }
+  }
+  
+  const data = await response.json()
+  
+  if (!data.content || !data.content[0] || !data.content[0].text) {
+    throw new Error('Claude API 응답이 예상과 다릅니다.')
+  }
+  
+  const responseText = data.content[0].text
+  return extractJsonFromResponse(responseText)
+}
+
+/**
+ * 텍스트를 세 가지 톤으로 변환 (선택된 AI 제공업체 사용)
+ */
+export async function convertText(userText: string, provider: AIProvider, apiKey: string): Promise<AIApiResponse> {
   if (!userText.trim()) {
     throw new Error('변환할 텍스트를 입력해주세요.')
   }
@@ -103,36 +247,17 @@ export async function convertText(userText: string, apiKey: string): Promise<Gem
     throw new Error('API 키가 설정되지 않았습니다.')
   }
   
-  const payload = createApiPayload(userText)
-  
   try {
-    const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    })
-    
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        throw new Error('API 키가 유효하지 않습니다. 설정 페이지에서 확인해주세요.')
-      } else if (response.status >= 500) {
-        throw new Error('AI 서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.')
-      } else {
-        throw new Error(`API 호출 실패 (${response.status})`)
-      }
+    switch (provider) {
+      case 'gemini':
+        return await callGeminiAPI(userText, apiKey)
+      case 'chatgpt':
+        return await callOpenAIAPI(userText, apiKey)
+      case 'claude':
+        return await callClaudeAPI(userText, apiKey)
+      default:
+        throw new Error('지원하지 않는 AI 제공업체입니다.')
     }
-    
-    const data = await response.json()
-    
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-      throw new Error('API 응답이 예상과 다릅니다.')
-    }
-    
-    const responseText = data.candidates[0].content.parts[0].text
-    return extractJsonFromResponse(responseText)
-    
   } catch (error) {
     if (error instanceof Error) {
       throw error
@@ -144,12 +269,33 @@ export async function convertText(userText: string, apiKey: string): Promise<Gem
 /**
  * API 키 유효성 검증
  */
-export async function validateApiKey(apiKey: string): Promise<boolean> {
+export async function validateApiKey(provider: AIProvider, apiKey: string): Promise<boolean> {
   try {
-    await convertText('테스트', apiKey)
+    await convertText('테스트', provider, apiKey)
     return true
   } catch (error) {
     console.error('API key validation error:', error)
     return false
   }
 }
+
+/**
+ * AI 제공업체 정보
+ */
+export const AI_PROVIDERS = {
+  gemini: {
+    name: 'Google Gemini',
+    description: 'Google의 최신 AI 모델',
+    model: 'gemini-2.0-flash-exp'
+  },
+  chatgpt: {
+    name: 'ChatGPT',
+    description: 'OpenAI의 GPT 모델',
+    model: 'gpt-4o-mini'
+  },
+  claude: {
+    name: 'Claude',
+    description: 'Anthropic의 Claude 모델',
+    model: 'claude-3-5-haiku-20241022'
+  }
+} as const

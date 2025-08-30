@@ -6,7 +6,6 @@ import { ActionBarProps } from '@/types'
 const ActionBar: React.FC<ActionBarProps> = ({
   onRegenerate,
   onReadClipboard,
-  remainingCount,
   isLoading,
   onOpenSettings
 }) => {
@@ -27,7 +26,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
           variant="secondary"
           size="sm"
           onClick={onRegenerate}
-          disabled={isLoading || remainingCount <= 0}
+          disabled={isLoading}
           className="flex items-center gap-2"
         >
           <RotateCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -41,14 +40,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
         >
           <Settings className="h-4 w-4" />
         </Button>
-      </div>
-      
-      <div className="text-xs text-muted-foreground">
-        {remainingCount > 0 ? (
-          <>오늘 남은 횟수: <span className="font-medium">{remainingCount}/50</span></>
-        ) : (
-          <span className="text-destructive font-medium">오늘 사용량을 모두 사용하셨습니다</span>
-        )}
       </div>
     </div>
   )

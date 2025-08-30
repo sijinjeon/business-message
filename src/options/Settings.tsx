@@ -6,13 +6,28 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectItem } from '@/components/ui/select'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
-import { saveApiKey, getApiKey, getAutoCopyEnabled, setAutoCopyEnabled, getAutoCopyTone, setAutoCopyTone } from '@/utils/storage'
-import { validateApiKey } from '@/utils/api'
+import { 
+  saveApiKey, 
+  getApiKey, 
+  getAutoCopyEnabled, 
+  setAutoCopyEnabled, 
+  getAutoCopyTone, 
+  setAutoCopyTone,
+  getSelectedProvider,
+  setSelectedProvider
+} from '@/utils/storage'
+import { validateApiKey, AI_PROVIDERS } from '@/utils/api'
+import { AIProvider } from '@/types'
 
 type ValidationState = 'idle' | 'testing' | 'success' | 'error'
 
 function Settings() {
-  const [apiKey, setApiKey] = useState('')
+  const [selectedProvider, setSelectedProviderState] = useState<AIProvider>('gemini')
+  const [apiKeys, setApiKeys] = useState({
+    gemini: '',
+    chatgpt: '',
+    claude: ''
+  })
   const [validationState, setValidationState] = useState<ValidationState>('idle')
   const [message, setMessage] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -25,13 +40,19 @@ function Settings() {
   
   const loadSettings = async () => {
     try {
-      const savedKey = await getApiKey()
+      const provider = await getSelectedProvider()
+      const geminiKey = await getApiKey('gemini')
+      const chatgptKey = await getApiKey('chatgpt')
+      const claudeKey = await getApiKey('claude')
       const autoCopy = await getAutoCopyEnabled()
       const copyTone = await getAutoCopyTone()
       
-      if (savedKey) {
-        setApiKey(savedKey)
-      }
+      setSelectedProviderState(provider)
+      setApiKeys({
+        gemini: geminiKey,
+        chatgpt: chatgptKey,
+        claude: claudeKey
+      })
       setAutoCopyEnabledState(autoCopy)
       setAutoCopyToneState(copyTone)
     } catch (error) {
@@ -39,8 +60,27 @@ function Settings() {
     }
   }
   
+  const handleProviderChange = async (provider: string) => {
+    const newProvider = provider as AIProvider
+    setSelectedProviderState(newProvider)
+    try {
+      await setSelectedProvider(newProvider)
+    } catch (error) {
+      console.error('Failed to save provider setting:', error)
+    }
+  }
+  
+  const handleApiKeyChange = (provider: AIProvider, value: string) => {
+    setApiKeys(prev => ({
+      ...prev,
+      [provider]: value
+    }))
+  }
+  
   const handleTest = async () => {
-    if (!apiKey.trim()) {
+    const currentApiKey = apiKeys[selectedProvider]
+    
+    if (!currentApiKey.trim()) {
       setMessage('API 키를 입력해주세요.')
       return
     }
@@ -49,7 +89,7 @@ function Settings() {
     setMessage('')
     
     try {
-      const isValid = await validateApiKey(apiKey.trim())
+      const isValid = await validateApiKey(selectedProvider, currentApiKey.trim())
       if (isValid) {
         setValidationState('success')
         setMessage('API 키가 유효합니다!')
@@ -64,7 +104,9 @@ function Settings() {
   }
   
   const handleSave = async () => {
-    if (!apiKey.trim()) {
+    const currentApiKey = apiKeys[selectedProvider]
+    
+    if (!currentApiKey.trim()) {
       setMessage('API 키를 입력해주세요.')
       return
     }
@@ -73,7 +115,7 @@ function Settings() {
     setMessage('')
     
     try {
-      await saveApiKey(apiKey.trim())
+      await saveApiKey(selectedProvider, currentApiKey.trim())
       await setAutoCopyEnabled(autoCopyEnabled)
       await setAutoCopyTone(autoCopyTone)
       setMessage('설정이 저장되었습니다.')
@@ -104,27 +146,58 @@ function Settings() {
     }
   }
   
+  const currentProvider = AI_PROVIDERS[selectedProvider]
+  const currentApiKey = apiKeys[selectedProvider]
+  
   return (
     <div className="max-w-2xl mx-auto p-8 space-y-8">
       <div>
         <h1 className="text-2xl font-bold mb-2">설정</h1>
         <p className="text-muted-foreground">
-          정중한 문장 도우미를 사용하기 위해 Google Gemini API 키를 설정해주세요.
+          정중한 문장 도우미를 사용하기 위해 AI 제공업체를 선택하고 API 키를 설정해주세요.
         </p>
       </div>
       
       <Card>
         <CardHeader>
-          <CardTitle>Google Gemini API 키 설정</CardTitle>
+          <CardTitle>AI 제공업체 선택</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">AI 제공업체</label>
+            <Select
+              value={selectedProvider}
+              onValueChange={handleProviderChange}
+            >
+              <SelectItem value="gemini">
+                {AI_PROVIDERS.gemini.name} - {AI_PROVIDERS.gemini.description}
+              </SelectItem>
+              <SelectItem value="chatgpt">
+                {AI_PROVIDERS.chatgpt.name} - {AI_PROVIDERS.chatgpt.description}
+              </SelectItem>
+              <SelectItem value="claude">
+                {AI_PROVIDERS.claude.name} - {AI_PROVIDERS.claude.description}
+              </SelectItem>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              현재 모델: {currentProvider.model}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>{currentProvider.name} API 키 설정</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">API 키</label>
             <Input
               type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Google AI Studio에서 발급받은 API 키를 입력하세요"
+              value={currentApiKey}
+              onChange={(e) => handleApiKeyChange(selectedProvider, e.target.value)}
+              placeholder={`${currentProvider.name} API 키를 입력하세요`}
               className="font-mono"
             />
           </div>
@@ -133,7 +206,7 @@ function Settings() {
             <Button
               variant="secondary"
               onClick={handleTest}
-              disabled={validationState === 'testing' || !apiKey.trim()}
+              disabled={validationState === 'testing' || !currentApiKey.trim()}
             >
               {validationState === 'testing' ? (
                 <>
@@ -147,7 +220,7 @@ function Settings() {
             
             <Button
               onClick={handleSave}
-              disabled={isSaving || !apiKey.trim()}
+              disabled={isSaving || !currentApiKey.trim()}
             >
               {isSaving ? (
                 <>
@@ -219,28 +292,87 @@ function Settings() {
         <CardHeader>
           <CardTitle>API 키 발급 방법</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <ol className="list-decimal list-inside space-y-2 text-sm">
-            <li>
-              <a 
-                href="https://ai.google.dev/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                Google AI Studio
-              </a>에 접속합니다.
-            </li>
-            <li>Google 계정으로 로그인합니다.</li>
-            <li>"Get API Key" 버튼을 클릭합니다.</li>
-            <li>"Create API Key" 를 선택하여 새 API 키를 생성합니다.</li>
-            <li>생성된 API 키를 복사하여 위 입력란에 붙여넣습니다.</li>
-          </ol>
+        <CardContent className="space-y-6">
+          {selectedProvider === 'gemini' && (
+            <div className="space-y-3">
+              <h4 className="font-medium">Google Gemini API 키 발급</h4>
+              <ol className="list-decimal list-inside space-y-2 text-sm">
+                <li>
+                  <a 
+                    href="https://ai.google.dev/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Google AI Studio
+                  </a>에 접속합니다.
+                </li>
+                <li>Google 계정으로 로그인합니다.</li>
+                <li>"Get API Key" 버튼을 클릭합니다.</li>
+                <li>"Create API Key" 를 선택하여 새 API 키를 생성합니다.</li>
+                <li>생성된 API 키를 복사하여 위 입력란에 붙여넣습니다.</li>
+              </ol>
+            </div>
+          )}
+          
+          {selectedProvider === 'chatgpt' && (
+            <div className="space-y-3">
+              <h4 className="font-medium">OpenAI API 키 발급</h4>
+              <ol className="list-decimal list-inside space-y-2 text-sm">
+                <li>
+                  <a 
+                    href="https://platform.openai.com/api-keys" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    OpenAI Platform
+                  </a>에 접속합니다.
+                </li>
+                <li>OpenAI 계정으로 로그인합니다.</li>
+                <li>"Create new secret key" 버튼을 클릭합니다.</li>
+                <li>키 이름을 입력하고 "Create secret key"를 클릭합니다.</li>
+                <li>생성된 API 키를 복사하여 위 입력란에 붙여넣습니다.</li>
+              </ol>
+              <div className="p-3 bg-yellow-50 rounded-lg">
+                <p className="text-xs text-yellow-800">
+                  <strong>주의:</strong> OpenAI API는 유료 서비스입니다. 사용량에 따라 요금이 부과됩니다.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {selectedProvider === 'claude' && (
+            <div className="space-y-3">
+              <h4 className="font-medium">Anthropic Claude API 키 발급</h4>
+              <ol className="list-decimal list-inside space-y-2 text-sm">
+                <li>
+                  <a 
+                    href="https://console.anthropic.com/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Anthropic Console
+                  </a>에 접속합니다.
+                </li>
+                <li>Anthropic 계정으로 로그인합니다.</li>
+                <li>좌측 메뉴에서 "API Keys"를 클릭합니다.</li>
+                <li>"Create Key" 버튼을 클릭합니다.</li>
+                <li>생성된 API 키를 복사하여 위 입력란에 붙여넣습니다.</li>
+              </ol>
+              <div className="p-3 bg-yellow-50 rounded-lg">
+                <p className="text-xs text-yellow-800">
+                  <strong>주의:</strong> Claude API는 유료 서비스입니다. 사용량에 따라 요금이 부과됩니다.
+                </p>
+              </div>
+            </div>
+          )}
           
           <div className="mt-4 p-3 bg-muted rounded-lg">
             <p className="text-xs text-muted-foreground">
               <strong>개인정보 보호:</strong> 입력된 API 키는 암호화되어 브라우저에만 저장되며, 
-              외부 서버로 전송되지 않습니다. 변환할 텍스트 역시 Google AI 서비스로만 전송되며 
+              외부 서버로 전송되지 않습니다. 변환할 텍스트 역시 선택한 AI 서비스로만 전송되며 
               별도로 저장되지 않습니다.
             </p>
           </div>

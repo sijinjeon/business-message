@@ -1,13 +1,18 @@
-import { AppStorage } from '@/types'
+import { AppStorage, AIProvider } from '@/types'
 
 // 기본 설정값
 const DEFAULT_STORAGE: AppStorage = {
-  userApiKey: '',
+  apiKeys: {
+    gemini: '',
+    chatgpt: '',
+    claude: ''
+  },
   dailyUsage: {
     date: new Date().toISOString().split('T')[0],
     count: 0
   },
   settings: {
+    selectedProvider: 'gemini',
     preferredModel: 'gemini-2.0-flash-exp',
     temperature: 0.7,
     maxOutputTokens: 1024,
@@ -22,6 +27,24 @@ const DEFAULT_STORAGE: AppStorage = {
 export async function getStorageData(): Promise<AppStorage> {
   try {
     const result = await chrome.storage.local.get(null)
+    
+    // 기존 데이터 마이그레이션 (userApiKey -> apiKeys.gemini)
+    if (result.userApiKey && !result.apiKeys?.gemini) {
+      const migratedData = {
+        ...DEFAULT_STORAGE,
+        ...result,
+        apiKeys: {
+          gemini: result.userApiKey,
+          chatgpt: '',
+          claude: ''
+        }
+      }
+      // 기존 userApiKey 제거
+      delete (migratedData as any).userApiKey
+      await chrome.storage.local.set(migratedData)
+      return migratedData
+    }
+    
     return { ...DEFAULT_STORAGE, ...result }
   } catch (error) {
     console.error('Storage read error:', error)
@@ -42,27 +65,63 @@ export async function setStorageData(data: Partial<AppStorage>): Promise<void> {
 }
 
 /**
- * API 키를 저장합니다 (암호화 적용)
+ * 특정 제공업체의 API 키를 저장합니다 (암호화 적용)
  */
-export async function saveApiKey(apiKey: string): Promise<void> {
+export async function saveApiKey(provider: AIProvider, apiKey: string): Promise<void> {
   const { encryptData } = await import('./crypto')
   const encryptedKey = await encryptData(apiKey)
-  await setStorageData({ userApiKey: encryptedKey })
+  const data = await getStorageData()
+  
+  await setStorageData({ 
+    apiKeys: {
+      ...data.apiKeys,
+      [provider]: encryptedKey
+    }
+  })
 }
 
 /**
- * API 키를 불러옵니다 (복호화 적용)
+ * 특정 제공업체의 API 키를 불러옵니다 (복호화 적용)
  */
-export async function getApiKey(): Promise<string> {
+export async function getApiKey(provider: AIProvider): Promise<string> {
   const data = await getStorageData()
-  if (!data.userApiKey) return ''
+  if (!data.apiKeys[provider]) return ''
   
   const { decryptData } = await import('./crypto')
   try {
-    return await decryptData(data.userApiKey)
+    return await decryptData(data.apiKeys[provider])
   } catch {
     return ''
   }
+}
+
+/**
+ * 현재 선택된 제공업체의 API 키를 불러옵니다
+ */
+export async function getCurrentApiKey(): Promise<string> {
+  const data = await getStorageData()
+  return getApiKey(data.settings.selectedProvider)
+}
+
+/**
+ * 선택된 AI 제공업체를 가져옵니다
+ */
+export async function getSelectedProvider(): Promise<AIProvider> {
+  const data = await getStorageData()
+  return data.settings.selectedProvider
+}
+
+/**
+ * 선택된 AI 제공업체를 저장합니다
+ */
+export async function setSelectedProvider(provider: AIProvider): Promise<void> {
+  const data = await getStorageData()
+  await setStorageData({
+    settings: {
+      ...data.settings,
+      selectedProvider: provider
+    }
+  })
 }
 
 /**
