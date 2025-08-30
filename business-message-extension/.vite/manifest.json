@@ -1,0 +1,47 @@
+{
+  "../../../../../../../../@crx/manifest": {
+    "file": "assets/crx-manifest.js-DfmE9lQz.js",
+    "name": "crx-manifest.js",
+    "src": "../../../../../../../../@crx/manifest",
+    "isEntry": true
+  },
+  "_global-DEr6i2Ao.js": {
+    "file": "assets/global-DEr6i2Ao.js",
+    "name": "global",
+    "dynamicImports": [
+      "src/utils/crypto.ts",
+      "src/utils/crypto.ts"
+    ],
+    "css": [
+      "assets/global-tn0RQdqM.css"
+    ]
+  },
+  "_global-tn0RQdqM.css": {
+    "file": "assets/global-tn0RQdqM.css",
+    "src": "_global-tn0RQdqM.css"
+  },
+  "src/options/index.html": {
+    "file": "assets/options-B09aPG0w.js",
+    "name": "options",
+    "src": "src/options/index.html",
+    "isEntry": true,
+    "imports": [
+      "_global-DEr6i2Ao.js"
+    ]
+  },
+  "src/popup/index.html": {
+    "file": "assets/popup-D70oH3XO.js",
+    "name": "popup",
+    "src": "src/popup/index.html",
+    "isEntry": true,
+    "imports": [
+      "_global-DEr6i2Ao.js"
+    ]
+  },
+  "src/utils/crypto.ts": {
+    "file": "assets/crypto-CjZv8FxB.js",
+    "name": "crypto",
+    "src": "src/utils/crypto.ts",
+    "isDynamicEntry": true
+  }
+}

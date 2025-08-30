@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "정중한 문장 도우미",
+  "version": "1.0.0",
+  "description": "클립보드에 복사된 문장을 AI를 통해 정중한 비즈니스 표현으로 변환합니다.",
+  "permissions": [
+    "storage",
+    "clipboardRead",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "정중한 문장 도우미"
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "options_page": "src/options/index.html",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
