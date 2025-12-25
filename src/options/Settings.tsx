@@ -6,12 +6,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectItem } from '@/components/ui/select'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
-import { 
-  saveApiKey, 
-  getApiKey, 
-  getAutoCopyEnabled, 
-  setAutoCopyEnabled, 
-  getAutoCopyTone, 
+import {
+  saveApiKey,
+  getApiKey,
+  getAutoCopyEnabled,
+  setAutoCopyEnabled,
+  getAutoCopyTone,
   setAutoCopyTone,
   getSelectedProvider,
   setSelectedProvider
@@ -33,11 +33,11 @@ function Settings() {
   const [isSaving, setIsSaving] = useState(false)
   const [autoCopyEnabled, setAutoCopyEnabledState] = useState(true)
   const [autoCopyTone, setAutoCopyToneState] = useState<'formal' | 'general' | 'friendly'>('formal')
-  
+
   useEffect(() => {
     loadSettings()
   }, [])
-  
+
   const loadSettings = async () => {
     try {
       const provider = await getSelectedProvider()
@@ -46,7 +46,7 @@ function Settings() {
       const claudeKey = await getApiKey('claude')
       const autoCopy = await getAutoCopyEnabled()
       const copyTone = await getAutoCopyTone()
-      
+
       setSelectedProviderState(provider)
       setApiKeys({
         gemini: geminiKey,
@@ -59,7 +59,7 @@ function Settings() {
       console.error('Failed to load settings:', error)
     }
   }
-  
+
   const handleProviderChange = async (provider: string) => {
     const newProvider = provider as AIProvider
     setSelectedProviderState(newProvider)
@@ -69,64 +69,64 @@ function Settings() {
       console.error('Failed to save provider setting:', error)
     }
   }
-  
+
   const handleApiKeyChange = (provider: AIProvider, value: string) => {
     setApiKeys(prev => ({
       ...prev,
       [provider]: value
     }))
   }
-  
+
   const handleTest = async () => {
     const currentApiKey = apiKeys[selectedProvider]
-    
+
     if (!currentApiKey.trim()) {
-      setMessage('API 키를 입력해주세요.')
+      setMessage('Please enter an API key.')
       return
     }
-    
+
     setValidationState('testing')
     setMessage('')
-    
+
     try {
       const isValid = await validateApiKey(selectedProvider, currentApiKey.trim())
       if (isValid) {
         setValidationState('success')
-        setMessage('API 키가 유효합니다!')
+        setMessage('API key is valid!')
       } else {
         setValidationState('error')
-        setMessage('유효하지 않은 API 키입니다. 다시 확인해주세요.')
+        setMessage('Invalid API key. Please check again.')
       }
     } catch (error) {
       setValidationState('error')
-      setMessage('연결 테스트 중 오류가 발생했습니다.')
+      setMessage('Error occurred during connection test.')
     }
   }
-  
+
   const handleSave = async () => {
     const currentApiKey = apiKeys[selectedProvider]
-    
+
     if (!currentApiKey.trim()) {
-      setMessage('API 키를 입력해주세요.')
+      setMessage('Please enter an API key.')
       return
     }
-    
+
     setIsSaving(true)
     setMessage('')
-    
+
     try {
       await saveApiKey(selectedProvider, currentApiKey.trim())
       await setAutoCopyEnabled(autoCopyEnabled)
       await setAutoCopyTone(autoCopyTone)
-      setMessage('설정이 저장되었습니다.')
+      setMessage('Settings saved successfully.')
       setTimeout(() => setMessage(''), 3000)
     } catch (error) {
-      setMessage('저장 중 오류가 발생했습니다.')
+      setMessage('Error occurred while saving.')
     } finally {
       setIsSaving(false)
     }
   }
-  
+
   const handleAutoCopyToggle = async (enabled: boolean) => {
     setAutoCopyEnabledState(enabled)
     try {
@@ -135,7 +135,7 @@ function Settings() {
       console.error('Failed to save auto copy setting:', error)
     }
   }
-  
+
   const handleAutoCopyToneChange = async (value: string) => {
     const tone = value as 'formal' | 'general' | 'friendly'
     setAutoCopyToneState(tone)
@@ -145,26 +145,26 @@ function Settings() {
       console.error('Failed to save auto copy tone:', error)
     }
   }
-  
+
   const currentProvider = AI_PROVIDERS[selectedProvider]
   const currentApiKey = apiKeys[selectedProvider]
-  
+
   return (
-    <div className="max-w-2xl mx-auto p-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold mb-2">설정</h1>
-        <p className="text-muted-foreground">
-          정중한 문장 도우미를 사용하기 위해 AI 제공업체를 선택하고 API 키를 설정해주세요.
+    <div className="max-w-2xl mx-auto p-10 space-y-12 bg-background/50 min-h-screen">
+      <div className="border-b pb-8">
+        <h1 className="text-3xl font-extrabold tracking-tight mb-3 text-primary">Settings</h1>
+        <p className="text-sm text-muted-foreground font-medium max-w-lg leading-relaxed">
+          Configure your AI providers and application preferences to get the most out of your polite assistant.
         </p>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>AI 제공업체 선택</CardTitle>
+
+      <Card className="shadow-sm border-primary/5 rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
+        <CardHeader className="bg-muted/30 border-b border-primary/5">
+          <CardTitle className="text-lg font-bold">AI Provider settings</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">AI 제공업체</label>
+        <CardContent className="p-6 space-y-4">
+          <div className="space-y-3">
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Select AI Provider</label>
             <Select
               value={selectedProvider}
               onValueChange={handleProviderChange}
@@ -179,201 +179,207 @@ function Settings() {
                 {AI_PROVIDERS.claude.name} - {AI_PROVIDERS.claude.description}
               </SelectItem>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              현재 모델: {currentProvider.model}
-            </p>
+            <div className="p-2 bg-primary/5 rounded-lg border border-primary/10 inline-block">
+              <p className="text-[10px] font-bold text-primary uppercase tracking-widest px-1">
+                Active Model: {currentProvider.model}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>{currentProvider.name} API 키 설정</CardTitle>
+
+      <Card className="shadow-sm border-primary/5 rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
+        <CardHeader className="bg-muted/30 border-b border-primary/5">
+          <CardTitle className="text-lg font-bold">{currentProvider.name} API Configuration</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">API 키</label>
+        <CardContent className="p-6 space-y-6">
+          <div className="space-y-3">
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">API Key</label>
             <Input
               type="password"
               value={currentApiKey}
               onChange={(e) => handleApiKeyChange(selectedProvider, e.target.value)}
-              placeholder={`${currentProvider.name} API 키를 입력하세요`}
-              className="font-mono"
+              placeholder={`Enter your ${currentProvider.name} API key`}
+              className="font-mono text-sm bg-muted/20 border-primary/10"
             />
           </div>
-          
-          <div className="flex gap-2">
+
+          <div className="flex gap-3">
             <Button
               variant="secondary"
               onClick={handleTest}
               disabled={validationState === 'testing' || !currentApiKey.trim()}
+              className="flex-1 font-semibold"
             >
               {validationState === 'testing' ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  연결 테스트 중...
+                  Testing...
                 </>
               ) : (
-                '연결 테스트'
+                'Test Connection'
               )}
             </Button>
-            
+
             <Button
               onClick={handleSave}
               disabled={isSaving || !currentApiKey.trim()}
+              className="flex-1 font-bold shadow-lg shadow-primary/20"
             >
               {isSaving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  저장 중...
+                  Saving...
                 </>
               ) : (
-                '저장'
+                'Save Settings'
               )}
             </Button>
           </div>
-          
+
           {message && (
-            <Alert variant={validationState === 'error' ? 'destructive' : 'default'}>
+            <Alert variant={validationState === 'error' ? 'destructive' : 'default'} className="rounded-xl border-dashed">
               <div className="flex items-center gap-2">
                 {validationState === 'success' && <CheckCircle className="w-4 h-4 text-green-600" />}
                 {validationState === 'error' && <XCircle className="w-4 h-4" />}
-                <AlertDescription>{message}</AlertDescription>
+                <AlertDescription className="text-xs font-medium">{message}</AlertDescription>
               </div>
             </Alert>
           )}
         </CardContent>
       </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>자동 복사 설정</CardTitle>
+
+      <Card className="shadow-sm border-primary/5 rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
+        <CardHeader className="bg-muted/30 border-b border-primary/5">
+          <CardTitle className="text-lg font-bold">Automation preferences</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-3">
+        <CardContent className="p-6 space-y-6">
+          <div className="flex items-start space-x-3 p-4 rounded-xl bg-primary/5 border border-primary/10">
             <Checkbox
               id="auto-copy"
               checked={autoCopyEnabled}
               onCheckedChange={handleAutoCopyToggle}
+              className="mt-1"
             />
-            <div className="space-y-1">
-              <label 
-                htmlFor="auto-copy" 
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            <div className="space-y-1.5">
+              <label
+                htmlFor="auto-copy"
+                className="text-sm font-bold leading-none cursor-pointer text-foreground"
               >
-                변환 완료 시 결과를 자동으로 클립보드에 복사
+                Auto-copy results to clipboard
               </label>
-              <p className="text-xs text-muted-foreground">
-                활성화하면 변환이 완료될 때 선택한 톤의 결과가 자동으로 클립보드에 복사됩니다.
+              <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                Automatically copies the result of your preferred tone to the clipboard upon conversion.
               </p>
             </div>
           </div>
-          
+
           {autoCopyEnabled && (
-            <div className="space-y-2 ml-7">
-              <label className="text-sm font-medium">자동 복사할 톤 선택</label>
+            <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Preferred language style</label>
               <Select
                 value={autoCopyTone}
                 onValueChange={handleAutoCopyToneChange}
               >
-                <SelectItem value="formal">비즈니스 이메일</SelectItem>
-                <SelectItem value="general">사내 메신저</SelectItem>
-                <SelectItem value="friendly">캐주얼 채팅</SelectItem>
+                <SelectItem value="formal">Business Email</SelectItem>
+                <SelectItem value="general">Slack/Teams Message</SelectItem>
+                <SelectItem value="friendly">Casual Chat</SelectItem>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                변환 완료 시 선택한 톤의 결과가 자동으로 클립보드에 복사됩니다.
-              </p>
             </div>
           )}
         </CardContent>
       </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>API 키 발급 방법</CardTitle>
+
+      <Card className="shadow-sm border-primary/5 rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
+        <CardHeader className="bg-muted/30 border-b border-primary/5">
+          <CardTitle className="text-lg font-bold">Setup instructions</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="p-8 space-y-8">
           {selectedProvider === 'gemini' && (
-            <div className="space-y-3">
-              <h4 className="font-medium">Google Gemini API 키 발급</h4>
-              <ol className="list-decimal list-inside space-y-2 text-sm">
-                <li>
-                  <a 
-                    href="https://ai.google.dev/" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    Google AI Studio
-                  </a>에 접속합니다.
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-400">
+              <h4 className="font-bold text-foreground flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                How to get Google Gemini API Key
+              </h4>
+              <ol className="space-y-3 text-sm text-muted-foreground ml-3 border-l-2 border-muted pl-4">
+                <li className="relative">
+                  <span className="font-medium text-foreground">1. Visit AI Studio:</span> Access <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">Google AI Studio</a>.
                 </li>
-                <li>Google 계정으로 로그인합니다.</li>
-                <li>"Get API Key" 버튼을 클릭합니다.</li>
-                <li>"Create API Key" 를 선택하여 새 API 키를 생성합니다.</li>
-                <li>생성된 API 키를 복사하여 위 입력란에 붙여넣습니다.</li>
+                <li>
+                  <span className="font-medium text-foreground">2. Sign in:</span> Log in with your Google account.
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">3. Generate Key:</span> Click "Get API Key" button.
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">4. Create:</span> Select "Create API Key in new project".
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">5. Copy & Paste:</span> Copy the key and paste it into the field above.
+                </li>
               </ol>
             </div>
           )}
-          
+
           {selectedProvider === 'chatgpt' && (
-            <div className="space-y-3">
-              <h4 className="font-medium">OpenAI API 키 발급</h4>
-              <ol className="list-decimal list-inside space-y-2 text-sm">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-400">
+              <h4 className="font-bold text-foreground flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                How to get OpenAI API Key
+              </h4>
+              <ol className="space-y-3 text-sm text-muted-foreground ml-3 border-l-2 border-muted pl-4">
                 <li>
-                  <a 
-                    href="https://platform.openai.com/api-keys" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    OpenAI Platform
-                  </a>에 접속합니다.
+                  <span className="font-medium text-foreground">1. Visit Platform:</span> Access <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">OpenAI Platform</a>.
                 </li>
-                <li>OpenAI 계정으로 로그인합니다.</li>
-                <li>"Create new secret key" 버튼을 클릭합니다.</li>
-                <li>키 이름을 입력하고 "Create secret key"를 클릭합니다.</li>
-                <li>생성된 API 키를 복사하여 위 입력란에 붙여넣습니다.</li>
+                <li>
+                  <span className="font-medium text-foreground">2. Sign in:</span> Log in with your OpenAI account.
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">3. Create Secret:</span> Click "Create new secret key".
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">4. Name & Save:</span> Name your key and securely copy it.
+                </li>
               </ol>
-              <div className="p-3 bg-yellow-50 rounded-lg">
-                <p className="text-xs text-yellow-800">
-                  <strong>주의:</strong> OpenAI API는 유료 서비스입니다. 사용량에 따라 요금이 부과됩니다.
+              <div className="p-4 bg-amber-50 rounded-xl border border-amber-100/50">
+                <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                  <strong>Important:</strong> OpenAI API is a paid service. Ensure you have valid billing credits on your account.
                 </p>
               </div>
             </div>
           )}
-          
+
           {selectedProvider === 'claude' && (
-            <div className="space-y-3">
-              <h4 className="font-medium">Anthropic Claude API 키 발급</h4>
-              <ol className="list-decimal list-inside space-y-2 text-sm">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-400">
+              <h4 className="font-bold text-foreground flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                How to get Anthropic Claude API Key
+              </h4>
+              <ol className="space-y-3 text-sm text-muted-foreground ml-3 border-l-2 border-muted pl-4">
                 <li>
-                  <a 
-                    href="https://console.anthropic.com/" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    Anthropic Console
-                  </a>에 접속합니다.
+                  <span className="font-medium text-foreground">1. Visit Console:</span> Access <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">Anthropic Console</a>.
                 </li>
-                <li>Anthropic 계정으로 로그인합니다.</li>
-                <li>좌측 메뉴에서 "API Keys"를 클릭합니다.</li>
-                <li>"Create Key" 버튼을 클릭합니다.</li>
-                <li>생성된 API 키를 복사하여 위 입력란에 붙여넣습니다.</li>
+                <li>
+                  <span className="font-medium text-foreground">2. Sign in:</span> Log in with your Anthropic account.
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">3. Navigate:</span> Select "API Keys" from the sidebar.
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">4. Create:</span> Click "Create Key" and copy the value.
+                </li>
               </ol>
-              <div className="p-3 bg-yellow-50 rounded-lg">
-                <p className="text-xs text-yellow-800">
-                  <strong>주의:</strong> Claude API는 유료 서비스입니다. 사용량에 따라 요금이 부과됩니다.
+              <div className="p-4 bg-amber-50 rounded-xl border border-amber-100/50">
+                <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                  <strong>Important:</strong> Claude API is a paid service. Usage fees apply based on your plan.
                 </p>
               </div>
             </div>
           )}
-          
-          <div className="mt-4 p-3 bg-muted rounded-lg">
-            <p className="text-xs text-muted-foreground">
-              <strong>개인정보 보호:</strong> 입력된 API 키는 암호화되어 브라우저에만 저장되며, 
-              외부 서버로 전송되지 않습니다. 변환할 텍스트 역시 선택한 AI 서비스로만 전송되며 
-              별도로 저장되지 않습니다.
+
+          <div className="mt-4 p-5 bg-muted/40 rounded-xl border border-primary/5">
+            <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+              <strong className="text-foreground">Privacy Note:</strong> Your API keys are encrypted and stored locally in your browser. They are never sent to any external servers other than the AI provider you've selected.
             </p>
           </div>
         </CardContent>

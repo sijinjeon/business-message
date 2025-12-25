@@ -8,9 +8,9 @@ import ActionBar from './components/ActionBar'
 import { AppState, AIProvider } from '@/types'
 import { readClipboard, writeClipboard } from '@/utils/clipboard'
 import { convertText, AI_PROVIDERS } from '@/utils/api'
-import { 
-  getCurrentApiKey, 
-  getAutoCopyEnabled, 
+import {
+  getCurrentApiKey,
+  getAutoCopyEnabled,
   getAutoCopyTone,
   getSelectedProvider,
   setSelectedProvider
@@ -28,28 +28,28 @@ const INITIAL_STATE: AppState = {
 function App() {
   const [state, setState] = useState<AppState>(INITIAL_STATE)
   const [selectedProvider, setSelectedProviderState] = useState<AIProvider>('gemini')
-  
+
   // 초기화
   useEffect(() => {
     initializeApp()
   }, [])
-  
+
   const initializeApp = async () => {
     try {
       // 클립보드에서 텍스트 읽기
       const clipboardText = await readClipboard()
-      
+
       // 선택된 AI 제공업체 로드
       const provider = await getSelectedProvider()
-      
+
       setState(prev => ({
         ...prev,
         inputText: clipboardText,
         remainingUsage: 0
       }))
-      
+
       setSelectedProviderState(provider)
-      
+
       // 클립보드에 텍스트가 있으면 자동 변환
       if (clipboardText) {
         await handleConvert(clipboardText)
@@ -58,21 +58,21 @@ function App() {
       console.error('Initialization error:', error)
     }
   }
-  
+
   const handleConvert = async (text?: string) => {
     const textToConvert = text || state.inputText
-    
+
     if (!textToConvert.trim()) {
       setState(prev => ({
         ...prev,
-        message: '변환할 텍스트를 입력해주세요.',
+        message: 'Please enter text to convert.',
         messageType: 'error'
       }))
       return
     }
-    
 
-    
+
+
     setState(prev => ({
       ...prev,
       loadingState: 'loading',
@@ -80,31 +80,31 @@ function App() {
       messageType: '',
       results: null
     }))
-    
+
     try {
       const apiKey = await getCurrentApiKey()
       if (!apiKey) {
         throw new Error('API 키가 설정되지 않았습니다. 설정 페이지에서 API 키를 입력해주세요.')
       }
-      
+
       const results = await convertText(textToConvert, selectedProvider, apiKey)
-      
+
       // 자동 복사 설정 확인 후 복사
       const autoCopyEnabled = await getAutoCopyEnabled()
       const autoCopyTone = await getAutoCopyTone()
-      let successMessage = '✅ 변환이 완료되었습니다!'
-      
+      let successMessage = '✅ Transformation completed!'
+
       if (autoCopyEnabled) {
         const textToCopy = results[autoCopyTone]
         await writeClipboard(textToCopy)
         const toneNames = {
-          formal: '비즈니스 이메일',
-          general: '사내 메신저', 
-          friendly: '캐주얼 채팅'
+          formal: 'Business Email',
+          general: 'Slack/Teams',
+          friendly: 'Casual Chat'
         }
-        successMessage = `✅ ${toneNames[autoCopyTone]} 결과가 클립보드에 복사되었습니다!`
+        successMessage = `✅ ${toneNames[autoCopyTone]} result copied to clipboard!`
       }
-      
+
       setState(prev => ({
         ...prev,
         loadingState: 'success',
@@ -113,7 +113,7 @@ function App() {
         message: successMessage,
         messageType: 'success'
       }))
-      
+
       // 성공 메시지를 3초 후 자동으로 제거
       setTimeout(() => {
         setState(prev => ({
@@ -122,7 +122,7 @@ function App() {
           messageType: ''
         }))
       }, 3000)
-      
+
     } catch (error) {
       console.error('Conversion error:', error)
       setState(prev => ({
@@ -133,15 +133,15 @@ function App() {
       }))
     }
   }
-  
+
   const handleCopy = useCallback(async (text: string) => {
     await writeClipboard(text)
   }, [])
-  
+
   const handleOpenSettings = useCallback(() => {
     chrome.runtime.openOptionsPage()
   }, [])
-  
+
   const handleProviderChange = useCallback(async (provider: string) => {
     const newProvider = provider as AIProvider
     setSelectedProviderState(newProvider)
@@ -151,7 +151,7 @@ function App() {
       console.error('Failed to save provider setting:', error)
     }
   }, [])
-  
+
   const handleInputChange = useCallback((value: string) => {
     setState(prev => ({
       ...prev,
@@ -160,18 +160,18 @@ function App() {
       messageType: ''
     }))
   }, [])
-  
+
   const handleReadClipboard = useCallback(async () => {
     try {
       const clipboardText = await readClipboard()
-      
+
       setState(prev => ({
         ...prev,
         inputText: clipboardText,
         message: '',
         messageType: ''
       }))
-      
+
       // 클립보드에 텍스트가 있으면 자동 변환
       if (clipboardText) {
         await handleConvert(clipboardText)
@@ -180,71 +180,81 @@ function App() {
       console.error('Clipboard read error:', error)
       setState(prev => ({
         ...prev,
-        message: '클립보드 읽기에 실패했습니다.',
+        message: 'Failed to read clipboard.',
         messageType: 'error'
       }))
     }
   }, [])
-  
+
   return (
-    <div className="w-full h-full p-4 space-y-4">
+    <div className="w-[380px] min-h-[500px] p-5 space-y-5 bg-background selection:bg-primary/20">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">정중한 문장 도우미</h1>
+      <div className="flex items-center justify-between border-b pb-4 mb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-sm font-bold tracking-tight text-foreground">Polite Assistant</h1>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Business Message Helper</p>
+          </div>
+        </div>
       </div>
-      
-      {/* AI 제공업체 선택 */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">AI 제공업체</label>
+
+      {/* AI Provider Selection */}
+      <div className="space-y-2.5 bg-muted/30 p-3 rounded-xl border border-primary/5">
+        <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-1">AI Provider</label>
         <Select
           value={selectedProvider}
           onValueChange={handleProviderChange}
         >
-          <SelectItem value="gemini">
+          <SelectItem value="gemini" className="text-xs">
             {AI_PROVIDERS.gemini.name}
           </SelectItem>
-          <SelectItem value="chatgpt">
+          <SelectItem value="chatgpt" className="text-xs">
             {AI_PROVIDERS.chatgpt.name}
           </SelectItem>
-          <SelectItem value="claude">
+          <SelectItem value="claude" className="text-xs">
             {AI_PROVIDERS.claude.name}
           </SelectItem>
         </Select>
       </div>
-      
-      {/* 입력 영역 */}
+
+      {/* Input Area */}
       <TextInput
         value={state.inputText}
         onChange={handleInputChange}
         maxLength={0}
-        placeholder="변환할 텍스트를 복사하거나, 직접 입력해주세요."
+        placeholder="Paste your text or type here..."
       />
-      
-      {/* 액션 바 */}
+
+      {/* Actions */}
       <ActionBar
         onRegenerate={() => handleConvert()}
         onReadClipboard={handleReadClipboard}
         isLoading={state.loadingState === 'loading'}
         onOpenSettings={handleOpenSettings}
       />
-      
-      {/* 메시지 */}
+
+      {/* Status Messages */}
       {state.message && (
-        <Alert variant={state.messageType === 'error' ? 'destructive' : 'default'}>
-          <AlertDescription>{state.message}</AlertDescription>
+        <Alert variant={state.messageType === 'error' ? 'destructive' : 'default'} className="rounded-xl border-dashed">
+          <AlertDescription className="text-[11px] font-medium">{state.message}</AlertDescription>
         </Alert>
       )}
-      
+
       {/* 결과 영역 */}
-      <div className="space-y-3">
+      <div className="space-y-4 pt-2">
         {state.loadingState === 'loading' && (
-          <>
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-          </>
+          <div className="space-y-4">
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-32 rounded-xl" />
+          </div>
         )}
-        
+
         {state.results && (
           <>
             <ResultCard

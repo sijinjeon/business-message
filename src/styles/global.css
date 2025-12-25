@@ -8,7 +8,7 @@
   --foreground: 222.2 47.4% 11.2%;
   --card: 0 0% 100%;
   --card-foreground: 222.2 47.4% 11.2%;
-  --primary: 221.2 83.2% 53.3%;
+  --primary: 221.2 100% 60%;
   --primary-foreground: 210 40% 98%;
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 215.4 16.3% 46.9%;
@@ -20,8 +20,8 @@
   --destructive-foreground: 210 40% 98%;
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
-  --radius: 0.5rem;
+  --ring: 221.2 100% 60%;
+  --radius: 0.75rem;
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 47.4% 11.2%;
 }
@@ -29,13 +29,14 @@
 /* 기본 스타일 */
 * {
   box-sizing: border-box;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: hsl(var(--background));
+  background-color: hsl(var(--muted)/0.3);
   color: hsl(var(--foreground));
   font-size: 14px;
   line-height: 1.5;
