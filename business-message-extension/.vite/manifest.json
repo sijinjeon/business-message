@@ -1,47 +1,84 @@
 {
-  "../../../../../../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-DfmE9lQz.js",
+  "../../../../../@crx/manifest": {
+    "file": "assets/crx-manifest.js-BM8P5CJS.js",
     "name": "crx-manifest.js",
-    "src": "../../../../../../../../@crx/manifest",
+    "src": "../../../../../@crx/manifest",
     "isEntry": true
   },
-  "_global-DEr6i2Ao.js": {
-    "file": "assets/global-DEr6i2Ao.js",
-    "name": "global",
+  "_crypto-ex6r7ieV.js": {
+    "file": "assets/crypto-ex6r7ieV.js",
+    "name": "crypto"
+  },
+  "_global-CC9kDKAs.css": {
+    "file": "assets/global-CC9kDKAs.css",
+    "src": "_global-CC9kDKAs.css"
+  },
+  "_index.ts-loader-B2XeQB4T.js": {
+    "file": "assets/index.ts-loader-B2XeQB4T.js",
+    "src": "_index.ts-loader-B2XeQB4T.js"
+  },
+  "_storage-Ce3jUJWf.js": {
+    "file": "assets/storage-Ce3jUJWf.js",
+    "name": "storage",
     "dynamicImports": [
-      "src/utils/crypto.ts",
-      "src/utils/crypto.ts"
-    ],
-    "css": [
-      "assets/global-tn0RQdqM.css"
+      "src/services/ai/models.ts"
     ]
   },
-  "_global-tn0RQdqM.css": {
-    "file": "assets/global-tn0RQdqM.css",
-    "src": "_global-tn0RQdqM.css"
+  "_storage-service-DubB-ORg.js": {
+    "file": "assets/storage-service-DubB-ORg.js",
+    "name": "storage-service"
+  },
+  "src/background/index.ts": {
+    "file": "assets/index.ts-BZpL_eZw.js",
+    "name": "index.ts",
+    "src": "src/background/index.ts",
+    "isEntry": true,
+    "imports": [
+      "_crypto-ex6r7ieV.js",
+      "_storage-Ce3jUJWf.js"
+    ]
+  },
+  "src/content/index.ts": {
+    "file": "assets/index.ts-BSPEGB_E.js",
+    "name": "index.ts",
+    "src": "src/content/index.ts",
+    "isEntry": true,
+    "css": [
+      "assets/global-CC9kDKAs.css"
+    ]
   },
   "src/options/index.html": {
-    "file": "assets/options-B09aPG0w.js",
-    "name": "options",
+    "file": "assets/index.html-Bg-_gHdv.js",
+    "name": "index.html",
     "src": "src/options/index.html",
     "isEntry": true,
     "imports": [
-      "_global-DEr6i2Ao.js"
+      "_storage-service-DubB-ORg.js",
+      "_crypto-ex6r7ieV.js",
+      "src/services/ai/models.ts"
+    ],
+    "css": [
+      "assets/global-CC9kDKAs.css"
     ]
   },
   "src/popup/index.html": {
-    "file": "assets/popup-D70oH3XO.js",
-    "name": "popup",
+    "file": "assets/index.html-CCxHg3xc.js",
+    "name": "index.html",
     "src": "src/popup/index.html",
     "isEntry": true,
     "imports": [
-      "_global-DEr6i2Ao.js"
+      "_storage-service-DubB-ORg.js",
+      "_crypto-ex6r7ieV.js",
+      "_storage-Ce3jUJWf.js"
+    ],
+    "css": [
+      "assets/global-CC9kDKAs.css"
     ]
   },
-  "src/utils/crypto.ts": {
-    "file": "assets/crypto-CjZv8FxB.js",
-    "name": "crypto",
-    "src": "src/utils/crypto.ts",
+  "src/services/ai/models.ts": {
+    "file": "assets/models-CtQ6fdnb.js",
+    "name": "models",
+    "src": "src/services/ai/models.ts",
     "isDynamicEntry": true
   }
 }

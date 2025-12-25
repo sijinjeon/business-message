@@ -15,7 +15,8 @@ export default defineConfig({
   ],
   base: '', // 빈 문자열로 설정하여 절대 경로 문제 해결
   build: {
-    target: 'es2020', // 더 호환성 있는 타겟으로 변경
+    outDir: 'business-message-extension', // 빌드 결과물을 사용자가 업로드하는 폴더로 지정
+    target: 'es2020',
     minify: 'terser',
     sourcemap: false, // 프로덕션에서는 소스맵 제거
     assetsDir: 'assets', // 에셋 디렉토리 명시적 지정

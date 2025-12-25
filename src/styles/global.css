@@ -1,63 +1,114 @@
-@tailwind base;
+/* @tailwind base; 제거 - 호스트 페이지(Gmail 등)의 스타일 오염 방지 */
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables - shadcn/ui 호환 */
-:root {
+/* CSS Variables - shadcn/ui 호환 (Zinc theme) */
+:root, .bca-ui-root {
   --background: 0 0% 100%;
-  --foreground: 222.2 47.4% 11.2%;
+  --foreground: 240 10% 3.9%;
   --card: 0 0% 100%;
-  --card-foreground: 222.2 47.4% 11.2%;
-  --primary: 221.2 100% 60%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 215.4 16.3% 46.9%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 100% 60%;
-  --radius: 0.75rem;
+  --card-foreground: 240 10% 3.9%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222.2 47.4% 11.2%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 240 5.9% 10%;
+  --radius: 0.75rem;
 }
 
-/* 기본 스타일 */
-* {
-  box-sizing: border-box;
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+.dark, .bca-ui-root.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
 }
 
-body {
+/* 기본 스타일 - 팝업 및 옵션 페이지용 (호스트 페이지 영향 최소화) */
+.bca-ui-root {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: hsl(var(--muted)/0.3);
+  background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
 }
 
-/* 스크롤바 스타일링 */
-::-webkit-scrollbar {
+.bca-ui-root * {
+  box-sizing: border-box;
+}
+
+/* 호스트 페이지의 모든 요소에 border-color가 적용되는 것 방지 */
+.bca-ui-root *, .bca-ui-root :before, .bca-ui-root :after {
+  border-color: hsl(var(--border));
+}
+
+/* 커스텀 스크롤바 */
+.bca-ui-root .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
 
-::-webkit-scrollbar-track {
+.bca-ui-root .custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bca-ui-root .custom-scrollbar::-webkit-scrollbar-thumb {
   background: hsl(var(--muted));
+  border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground));
-  border-radius: 3px;
+.bca-ui-root .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground)/0.5);
 }
 
-@layer base {
-  * {
-    border-color: hsl(var(--border));
-  }
+
+/* 로딩 스피너 애니메이션 */
+@keyframes bca-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.bca-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-radius: 50%;
+  border-top-color: #3b82f6;
+  animation: bca-spin 0.8s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.bca-loading-container {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85em;
+  color: #6b7280;
+  margin-left: 8px;
+  font-family: sans-serif;
 }

@@ -13,23 +13,28 @@ const TextInput: React.FC<TextInputProps> = ({
   const isOverLimit = hasLimit && characterCount > maxLength
 
   return (
-    <div className="space-y-2">
-      <Textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={`min-h-[140px] resize-none shadow-sm transition-all duration-300 border-primary/10 focus-visible:ring-primary/20 focus-visible:ring-offset-0 focus-visible:border-primary focus-visible:shadow-[0_0_10px_rgba(59,130,246,0.1)] ${isOverLimit ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20' : ''
+    <div className="space-y-3">
+      <div className="relative group">
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`min-h-[120px] resize-none p-5 rounded-2xl bg-zinc-50/50 border-zinc-100 transition-all duration-300 focus-visible:ring-zinc-900/5 focus-visible:ring-offset-0 focus-visible:border-zinc-300 focus-visible:bg-white text-base leading-relaxed ${
+            isOverLimit ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/10' : ''
           }`}
-        maxLength={hasLimit ? maxLength + 50 : undefined}
-      />
-      <div className="flex justify-end pr-1">
-        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted/50 ${isOverLimit ? 'text-destructive bg-destructive/5' : 'text-muted-foreground'}`}>
-          {characterCount}{hasLimit ? ` / ${maxLength}` : ' characters'}
-        </span>
+          maxLength={hasLimit ? maxLength + 50 : undefined}
+        />
+        <div className="absolute bottom-4 right-4 flex items-center gap-2">
+          <span className={`text-[12px] font-bold px-2 py-1 rounded-md bg-white border border-zinc-200/50 ${
+            isOverLimit ? 'text-destructive border-destructive/20 bg-destructive/5' : 'text-zinc-400'
+          }`}>
+            {characterCount.toLocaleString()}{hasLimit ? ` / ${maxLength}` : ' 자'}
+          </span>
+        </div>
       </div>
       {isOverLimit && (
-        <p className="text-[10px] text-destructive mt-1 font-medium italic">
-          텍스트가 너무 깁니다. {maxLength}자 이내로 입력해주세요.
+        <p className="text-[13px] text-destructive mt-1 font-medium px-1 animate-in fade-in slide-in-from-top-1">
+          글자 수가 제한을 초과했습니다. {maxLength}자 이내로 줄여주세요.
         </p>
       )}
     </div>

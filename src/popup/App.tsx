@@ -1,282 +1,273 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useState, useEffect } from 'react'
+import { AlertCircle, Sparkles, Command, ShieldCheck, Languages, MessageSquare, Loader2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectItem } from '@/components/ui/select'
 import TextInput from './components/TextInput'
 import ResultCard from './components/ResultCard'
 import ActionBar from './components/ActionBar'
-import { AppState, AIProvider } from '@/types'
+import { AIApiResponse, TargetLanguage } from '@/types'
 import { readClipboard, writeClipboard } from '@/utils/clipboard'
-import { convertText, AI_PROVIDERS } from '@/utils/api'
-import {
-  getCurrentApiKey,
-  getAutoCopyEnabled,
-  getAutoCopyTone,
-  getSelectedProvider,
-  setSelectedProvider
-} from '@/utils/storage'
-
-const INITIAL_STATE: AppState = {
-  inputText: '',
-  results: null,
-  loadingState: 'idle',
-  message: '',
-  messageType: '',
-  remainingUsage: 0
-}
+import { useSettings } from '@/hooks/useSettings'
+import { useAICall } from '@/hooks/useAICall'
+import { logUsage } from '@/utils/storage'
 
 function App() {
-  const [state, setState] = useState<AppState>(INITIAL_STATE)
-  const [selectedProvider, setSelectedProviderState] = useState<AIProvider>('gemini')
+  const { settings, apiKeys, lastUsedTab, isLoading: isSettingsLoading, updateLastUsedTab } = useSettings()
+  const { execute: runAI, loadingState, error: aiError } = useAICall()
 
-  // 초기화
+  const [inputText, setInputText] = useState('')
+  const [results, setResults] = useState<AIApiResponse | null>(null)
+  const [translationResult, setTranslationResult] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'tone' | 'translation'>('tone')
+  const [targetLanguage, setTargetLanguage] = useState<TargetLanguage>('ko')
+  const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'success' | 'error' | ''>('')
+
   useEffect(() => {
-    initializeApp()
-  }, [])
-
-  const initializeApp = async () => {
-    try {
-      // 클립보드에서 텍스트 읽기
-      const clipboardText = await readClipboard()
-
-      // 선택된 AI 제공업체 로드
-      const provider = await getSelectedProvider()
-
-      setState(prev => ({
-        ...prev,
-        inputText: clipboardText,
-        remainingUsage: 0
-      }))
-
-      setSelectedProviderState(provider)
-
-      // 클립보드에 텍스트가 있으면 자동 변환
-      if (clipboardText) {
-        await handleConvert(clipboardText)
-      }
-    } catch (error) {
-      console.error('Initialization error:', error)
+    if (settings) {
+      setTargetLanguage(settings.translation.defaultTargetLanguage)
+      setActiveTab(lastUsedTab)
     }
-  }
+  }, [settings?.translation.defaultTargetLanguage, lastUsedTab])
 
-  const handleConvert = async (text?: string) => {
-    const textToConvert = text || state.inputText
+  useEffect(() => {
+    const handleAutoProcess = async () => {
+      // 단축키로 열렸는지 확인
+      const data = await chrome.storage.local.get(['lastCommand', 'commandTimestamp']);
+      const now = Date.now();
+      
+      // 최근 2초 이내에 실행된 명령이 있는지 확인
+      if (data.lastCommand && data.commandTimestamp && (now - data.commandTimestamp < 2000)) {
+        const text = await readClipboard();
+        if (text) {
+          setInputText(text);
+          
+          if (data.lastCommand === '_execute_action') {
+            // 번역 탭으로 전환 후 실행
+            setActiveTab('translation');
+            await updateLastUsedTab('translation');
+            await handleProcess(text, 'translation');
+          } else if (data.lastCommand === 'tone-conversion') {
+            // 톤 변환 탭으로 전환 후 실행
+            setActiveTab('tone');
+            await updateLastUsedTab('tone');
+            await handleProcess(text, 'tone');
+          }
+        }
+        
+        // 사용한 명령 플래그 초기화
+        await chrome.storage.local.remove(['lastCommand', 'commandTimestamp']);
+      } else {
+        // 일반적인 팝업 열기 시 클립보드 읽기만 수행
+        const text = await readClipboard();
+        if (text && !inputText) {
+          setInputText(text);
+        }
+      }
+    };
 
-    if (!textToConvert.trim()) {
-      setState(prev => ({
-        ...prev,
-        message: 'Please enter text to convert.',
-        messageType: 'error'
-      }))
+    handleAutoProcess();
+  }, []); // Mount 시에만 1회 실행
+
+  const handleProcess = async (textOverride?: string, tabOverride?: 'tone' | 'translation') => {
+    const text = textOverride || inputText
+    const tab = tabOverride || activeTab
+
+    if (!text.trim() || !settings) {
+      showStatusMessage('내용을 입력해주세요.', 'error')
       return
     }
 
+    const apiKey = apiKeys[settings.selectedProvider]
+    if (!apiKey) {
+      showStatusMessage(`${settings.selectedProvider} API 키가 설정되지 않았습니다.`, 'error')
+      return
+    }
 
+    const response = await runAI(text, tab === 'tone' ? 'tone-conversion' : 'translation', {
+      provider: settings.selectedProvider,
+      model: settings.providerModels[settings.selectedProvider],
+      apiKey,
+      targetLanguage: tab === 'translation' ? targetLanguage : undefined
+    })
 
-    setState(prev => ({
-      ...prev,
-      loadingState: 'loading',
-      message: '',
-      messageType: '',
-      results: null
-    }))
-
-    try {
-      const apiKey = await getCurrentApiKey()
-      if (!apiKey) {
-        throw new Error('API 키가 설정되지 않았습니다. 설정 페이지에서 API 키를 입력해주세요.')
-      }
-
-      const results = await convertText(textToConvert, selectedProvider, apiKey)
-
-      // 자동 복사 설정 확인 후 복사
-      const autoCopyEnabled = await getAutoCopyEnabled()
-      const autoCopyTone = await getAutoCopyTone()
-      let successMessage = '✅ Transformation completed!'
-
-      if (autoCopyEnabled) {
-        const textToCopy = results[autoCopyTone]
-        await writeClipboard(textToCopy)
-        const toneNames = {
-          formal: 'Business Email',
-          general: 'Slack/Teams',
-          friendly: 'Casual Chat'
+    if (response) {
+      if (tab === 'tone') {
+        const res = response as AIApiResponse
+        setResults(res)
+        if (settings.autoCopyEnabled) {
+          await writeClipboard(res[settings.autoCopyTone])
+          showStatusMessage('✨ 변환 및 복사가 완료되었습니다.', 'success')
         }
-        successMessage = `✅ ${toneNames[autoCopyTone]} result copied to clipboard!`
+      } else {
+        setTranslationResult(response as string)
+        showStatusMessage('✨ 번역이 완료되었습니다.', 'success')
       }
-
-      setState(prev => ({
-        ...prev,
-        loadingState: 'success',
-        results,
-        remainingUsage: 0,
-        message: successMessage,
-        messageType: 'success'
-      }))
-
-      // 성공 메시지를 3초 후 자동으로 제거
-      setTimeout(() => {
-        setState(prev => ({
-          ...prev,
-          message: '',
-          messageType: ''
-        }))
-      }, 3000)
-
-    } catch (error) {
-      console.error('Conversion error:', error)
-      setState(prev => ({
-        ...prev,
-        loadingState: 'error',
-        message: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.',
-        messageType: 'error'
-      }))
+      
+      // 상세 로그 기록
+      await logUsage({
+        provider: settings.selectedProvider,
+        model: settings.providerModels[settings.selectedProvider],
+        task: tab === 'tone' ? 'tone-conversion' : 'translation',
+        inputTokens: Math.ceil(text.length * 0.75),
+        outputTokens: Math.ceil((typeof response === 'string' ? response.length : JSON.stringify(response).length) * 0.75)
+      })
     }
   }
 
-  const handleCopy = useCallback(async (text: string) => {
-    await writeClipboard(text)
-  }, [])
+  const showStatusMessage = (msg: string, type: 'success' | 'error') => {
+    setMessage(msg); setMessageType(type)
+    setTimeout(() => { setMessage(''); setMessageType('') }, 3000)
+  }
 
-  const handleOpenSettings = useCallback(() => {
-    chrome.runtime.openOptionsPage()
-  }, [])
+  const handleTabChange = async (tab: 'tone' | 'translation') => {
+    setActiveTab(tab)
+    setResults(null); setTranslationResult(null)
+    await updateLastUsedTab(tab)
+  }
 
-  const handleProviderChange = useCallback(async (provider: string) => {
-    const newProvider = provider as AIProvider
-    setSelectedProviderState(newProvider)
-    try {
-      await setSelectedProvider(newProvider)
-    } catch (error) {
-      console.error('Failed to save provider setting:', error)
+  const handleOpenSettings = () => {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
+      window.close(); // 팝업 닫기
+    } else {
+      window.open('../options/index.html', '_blank');
     }
-  }, [])
+  }
 
-  const handleInputChange = useCallback((value: string) => {
-    setState(prev => ({
-      ...prev,
-      inputText: value,
-      message: '',
-      messageType: ''
-    }))
-  }, [])
-
-  const handleReadClipboard = useCallback(async () => {
-    try {
-      const clipboardText = await readClipboard()
-
-      setState(prev => ({
-        ...prev,
-        inputText: clipboardText,
-        message: '',
-        messageType: ''
-      }))
-
-      // 클립보드에 텍스트가 있으면 자동 변환
-      if (clipboardText) {
-        await handleConvert(clipboardText)
-      }
-    } catch (error) {
-      console.error('Clipboard read error:', error)
-      setState(prev => ({
-        ...prev,
-        message: 'Failed to read clipboard.',
-        messageType: 'error'
-      }))
-    }
-  }, [])
+  if (isSettingsLoading) return <div className="w-[800px] h-[600px] flex items-center justify-center"><Loader2 className="animate-spin text-zinc-400" /></div>
 
   return (
-    <div className="w-[380px] min-h-[500px] p-5 space-y-5 bg-background selection:bg-primary/20">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between border-b pb-4 mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
+    <div className="w-[800px] h-[600px] bg-white relative flex flex-col overflow-hidden selection:bg-zinc-900/10">
+      <header className="px-6 py-4 flex items-center justify-between border-b border-zinc-100 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-zinc-900 flex items-center justify-center">
+            <Command className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-bold tracking-tight text-foreground">Polite Assistant</h1>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Business Message Helper</p>
+            <h1 className="text-[16px] font-bold tracking-tight text-zinc-900 leading-none">BCA Assistant</h1>
+            <p className="text-[12px] text-zinc-400 font-medium mt-1 uppercase tracking-[0.1em]">Smart Communication</p>
           </div>
         </div>
-      </div>
+        
+        <div className="flex bg-zinc-100 p-1 rounded-xl">
+          <TabButton active={activeTab === 'tone'} onClick={() => handleTabChange('tone')} icon={<MessageSquare className="w-3.5 h-3.5" />} label="톤 변환" />
+          <TabButton active={activeTab === 'translation'} onClick={() => handleTabChange('translation')} icon={<Languages className="w-3.5 h-3.5" />} label="전문 번역" />
+        </div>
+      </header>
 
-      {/* AI Provider Selection */}
-      <div className="space-y-2.5 bg-muted/30 p-3 rounded-xl border border-primary/5">
-        <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-1">AI Provider</label>
-        <Select
-          value={selectedProvider}
-          onValueChange={handleProviderChange}
-        >
-          <SelectItem value="gemini" className="text-xs">
-            {AI_PROVIDERS.gemini.name}
-          </SelectItem>
-          <SelectItem value="chatgpt" className="text-xs">
-            {AI_PROVIDERS.chatgpt.name}
-          </SelectItem>
-          <SelectItem value="claude" className="text-xs">
-            {AI_PROVIDERS.claude.name}
-          </SelectItem>
-        </Select>
-      </div>
+      <main className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-5">
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-[13px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+              <Sparkles className="w-3 h-3" />
+              {activeTab === 'tone' ? '메시지 작성' : '원문 입력'}
+            </h2>
+            <div className="flex gap-2">
+              {activeTab === 'translation' && (
+                <div className="w-28">
+                  <Select value={targetLanguage} onValueChange={(v) => setTargetLanguage(v as TargetLanguage)}>
+                    <SelectItem value="ko" className="text-sm">한국어</SelectItem>
+                    <SelectItem value="en" className="text-sm">영어</SelectItem>
+                    <SelectItem value="ja" className="text-sm">일본어</SelectItem>
+                    <SelectItem value="zh-CN" className="text-sm">중국어</SelectItem>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <TextInput value={inputText} onChange={setInputText} maxLength={5000} placeholder={activeTab === 'tone' ? "다듬고 싶은 메시지를 입력하세요..." : "번역할 내용을 입력하세요..."} />
 
-      {/* Input Area */}
-      <TextInput
-        value={state.inputText}
-        onChange={handleInputChange}
-        maxLength={0}
-        placeholder="Paste your text or type here..."
-      />
+          <ActionBar
+            onRegenerate={() => handleProcess()}
+            onReadClipboard={async () => {
+              const text = await readClipboard()
+              if (text) { 
+                setInputText(text); 
+                await handleProcess(text); 
+              }
+            }}
+            isLoading={loadingState === 'loading'}
+            onOpenSettings={handleOpenSettings}
+            activeTab={activeTab}
+          />
+        </section>
 
-      {/* Actions */}
-      <ActionBar
-        onRegenerate={() => handleConvert()}
-        onReadClipboard={handleReadClipboard}
-        isLoading={state.loadingState === 'loading'}
-        onOpenSettings={handleOpenSettings}
-      />
-
-      {/* Status Messages */}
-      {state.message && (
-        <Alert variant={state.messageType === 'error' ? 'destructive' : 'default'} className="rounded-xl border-dashed">
-          <AlertDescription className="text-[11px] font-medium">{state.message}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* 결과 영역 */}
-      <div className="space-y-4 pt-2">
-        {state.loadingState === 'loading' && (
-          <div className="space-y-4">
-            <Skeleton className="h-32 rounded-xl" />
-            <Skeleton className="h-32 rounded-xl" />
-            <Skeleton className="h-32 rounded-xl" />
+        {(message || aiError) && (
+          <div className={`p-4 rounded-2xl border flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${
+            messageType === 'error' || aiError ? 'bg-destructive/5 border-destructive/10 text-destructive' : 'bg-zinc-50 border-zinc-100 text-zinc-900'
+          }`}>
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <p className="text-[15px] font-medium">{aiError || message}</p>
           </div>
         )}
 
-        {state.results && (
-          <>
-            <ResultCard
-              tone="formal"
-              text={state.results.formal}
-              onCopy={handleCopy}
-              isDefaultSelected
-            />
-            <ResultCard
-              tone="general"
-              text={state.results.general}
-              onCopy={handleCopy}
-            />
-            <ResultCard
-              tone="friendly"
-              text={state.results.friendly}
-              onCopy={handleCopy}
-            />
-          </>
-        )}
-      </div>
+        <section className="space-y-5">
+          <h2 className="text-[14px] font-bold text-zinc-400 uppercase tracking-widest px-1">결과 영역</h2>
+          <div className="grid grid-cols-1 gap-5">
+            {loadingState === 'loading' && (
+              <>
+                <Skeleton className="h-[120px] rounded-2xl bg-zinc-50" />
+                {activeTab === 'tone' && <Skeleton className="h-[120px] rounded-2xl bg-zinc-50" />}
+              </>
+            )}
+
+            {activeTab === 'tone' && results && (
+              <>
+                <ResultCard tone="formal" text={results.formal} onCopy={writeClipboard} isDefaultSelected={settings?.autoCopyTone === 'formal'} />
+                <ResultCard tone="general" text={results.general} onCopy={writeClipboard} isDefaultSelected={settings?.autoCopyTone === 'general'} />
+                <ResultCard tone="friendly" text={results.friendly} onCopy={writeClipboard} isDefaultSelected={settings?.autoCopyTone === 'friendly'} />
+              </>
+            )}
+
+            {activeTab === 'translation' && translationResult && (
+              <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50/50 space-y-4">
+                <p className="text-[16px] leading-relaxed text-zinc-900 whitespace-pre-wrap">{translationResult}</p>
+                <div className="flex justify-end">
+                  <button onClick={() => { writeClipboard(translationResult!); showStatusMessage('✨ 클립보드에 복사되었습니다.', 'success') }} className="text-[13px] font-bold text-zinc-400 hover:text-zinc-900 uppercase tracking-wider transition-colors">
+                    Copy to Clipboard
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {loadingState === 'idle' && !results && !translationResult && (
+              <div className="py-20 flex flex-col items-center justify-center text-zinc-300 border border-dashed border-zinc-100 rounded-3xl">
+                <Sparkles className="w-10 h-10 mb-4 opacity-20" />
+                <p className="text-base font-medium">준비되었습니다. {activeTab === 'tone' ? '변환' : '번역'}을 시작해 보세요.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+
+      <footer className="px-8 py-4 border-t border-zinc-50 flex items-center justify-between text-[12px] text-zinc-400 font-bold uppercase tracking-widest shrink-0">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-3 h-3" />
+          Secured by {settings?.selectedProvider.toUpperCase()}
+        </div>
+        <div>v2.3.0</div>
+      </footer>
     </div>
+  )
+}
+
+interface TabButtonProps {
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+}
+
+function TabButton({ active, onClick, icon, label }: TabButtonProps) {
+  return (
+    <button onClick={onClick} className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[14px] font-bold transition-all ${
+      active ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-400 hover:text-zinc-600'
+    }`}>
+      {icon}
+      {label}
+    </button>
   )
 }
 

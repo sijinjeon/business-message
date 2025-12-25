@@ -1,6 +1,7 @@
-import { AppStorage, AIProvider } from '@/types'
+import { AppStorage, AIProvider, TargetLanguage, ToneType } from '@/types'
+import { encryptData, decryptData } from './crypto'
 
-// 기본 설정값
+// 기본 설정값 (v2.2)
 const DEFAULT_STORAGE: AppStorage = {
   apiKeys: {
     gemini: '',
@@ -11,14 +12,26 @@ const DEFAULT_STORAGE: AppStorage = {
     date: new Date().toISOString().split('T')[0],
     count: 0
   },
+  usageLogs: [],
   settings: {
     selectedProvider: 'gemini',
-    preferredModel: 'gemini-2.0-flash-exp',
+    providerModels: {
+      gemini: 'gemini-3-flash',
+      chatgpt: 'gpt-5.2',
+      claude: 'claude-4-5-sonnet'
+    },
     temperature: 0.7,
     maxOutputTokens: 1024,
     autoCopyEnabled: true,
-    autoCopyTone: 'formal'
-  }
+    autoCopyTone: 'formal',
+    instantToneStyle: 'formal',
+    translation: {
+      defaultTargetLanguage: 'ko',
+      preserveLineBreaks: true,
+      showNotification: true
+    }
+  },
+  lastUsedTab: 'tone'
 }
 
 /**
@@ -28,24 +41,24 @@ export async function getStorageData(): Promise<AppStorage> {
   try {
     const result = await chrome.storage.local.get(null)
     
-    // 기존 데이터 마이그레이션 (userApiKey -> apiKeys.gemini)
-    if (result.userApiKey && !result.apiKeys?.gemini) {
-      const migratedData = {
-        ...DEFAULT_STORAGE,
-        ...result,
-        apiKeys: {
-          gemini: result.userApiKey,
-          chatgpt: '',
-          claude: ''
-        }
-      }
-      // 기존 userApiKey 제거
-      delete (migratedData as any).userApiKey
-      await chrome.storage.local.set(migratedData)
-      return migratedData
-    }
+    // v2.2 마이그레이션 및 기본값 병합
+    const mergedData = { ...DEFAULT_STORAGE, ...result }
     
-    return { ...DEFAULT_STORAGE, ...result }
+    // usageLogs 보장
+    if (!mergedData.usageLogs) mergedData.usageLogs = []
+    
+    // settings 내부 객체들도 개별적으로 병합 (깊은 병합 필요)
+    mergedData.settings = { ...DEFAULT_STORAGE.settings, ...result.settings }
+    mergedData.settings.translation = { 
+      ...DEFAULT_STORAGE.settings.translation, 
+      ...result.settings?.translation 
+    }
+    mergedData.settings.providerModels = {
+      ...DEFAULT_STORAGE.settings.providerModels,
+      ...result.settings?.providerModels
+    }
+
+    return mergedData
   } catch (error) {
     console.error('Storage read error:', error)
     return DEFAULT_STORAGE
@@ -68,7 +81,6 @@ export async function setStorageData(data: Partial<AppStorage>): Promise<void> {
  * 특정 제공업체의 API 키를 저장합니다 (암호화 적용)
  */
 export async function saveApiKey(provider: AIProvider, apiKey: string): Promise<void> {
-  const { encryptData } = await import('./crypto')
   const encryptedKey = await encryptData(apiKey)
   const data = await getStorageData()
   
@@ -87,7 +99,6 @@ export async function getApiKey(provider: AIProvider): Promise<string> {
   const data = await getStorageData()
   if (!data.apiKeys[provider]) return ''
   
-  const { decryptData } = await import('./crypto')
   try {
     return await decryptData(data.apiKeys[provider])
   } catch {
@@ -104,28 +115,74 @@ export async function getCurrentApiKey(): Promise<string> {
 }
 
 /**
- * 선택된 AI 제공업체를 가져옵니다
+ * 선택된 AI 제공업체 관리
  */
 export async function getSelectedProvider(): Promise<AIProvider> {
   const data = await getStorageData()
   return data.settings.selectedProvider
 }
 
-/**
- * 선택된 AI 제공업체를 저장합니다
- */
 export async function setSelectedProvider(provider: AIProvider): Promise<void> {
+  const data = await getStorageData()
+  await setStorageData({
+    settings: { ...data.settings, selectedProvider: provider }
+  })
+}
+
+/**
+ * 제공자별 모델 관리
+ */
+export async function setProviderModel(provider: AIProvider, model: string): Promise<void> {
   const data = await getStorageData()
   await setStorageData({
     settings: {
       ...data.settings,
-      selectedProvider: provider
+      providerModels: { ...data.settings.providerModels, [provider]: model }
     }
   })
 }
 
 /**
- * 일일 사용량을 업데이트합니다
+ * 상세 사용량 로그 기록
+ */
+export async function logUsage(payload: {
+  provider: AIProvider;
+  model: string;
+  task: 'tone-conversion' | 'translation';
+  inputTokens?: number;
+  outputTokens?: number;
+}): Promise<void> {
+  const data = await getStorageData()
+  const { AI_MODELS } = await import('@/services/ai/models')
+  
+  // 가격 정보 가져오기 (1M 토큰당 가격)
+  const models = AI_MODELS[payload.provider] || []
+  const modelInfo = models.find(m => m.id === payload.model)
+  const pricePer1M = modelInfo?.pricePer1M || 0
+  
+  // 토큰 계산 (입력 + 출력) - 여기서는 간단히 추정치 사용
+  const totalTokens = (payload.inputTokens || 0) + (payload.outputTokens || 0)
+  const cost = (totalTokens / 1000000) * pricePer1M
+
+  const newLog: any = {
+    timestamp: Date.now(),
+    ...payload,
+    cost
+  }
+
+  // 로그는 최근 1000개만 유지 (스토리지 용량 제한 고려)
+  const updatedLogs = [newLog, ...(data.usageLogs || [])].slice(0, 1000)
+  
+  await setStorageData({
+    usageLogs: updatedLogs
+  })
+  
+  // 일일 카운트도 업데이트
+  await updateDailyUsage()
+}
+
+/**
+ * 일일 사용량 관리
  */
 export async function updateDailyUsage(): Promise<number> {
   const data = await getStorageData()
@@ -137,67 +194,65 @@ export async function updateDailyUsage(): Promise<number> {
   }
   
   await setStorageData({
-    dailyUsage: {
-      date: today,
-      count: newCount
-    }
+    dailyUsage: { date: today, count: newCount }
   })
   
   return newCount
 }
 
 /**
- * 남은 사용 횟수를 확인합니다
- */
-export async function getRemainingUsage(): Promise<number> {
-  const data = await getStorageData()
-  const today = new Date().toISOString().split('T')[0]
-  
-  if (data.dailyUsage.date !== today) {
-    return 50 // 새로운 날이면 50회 모두 사용 가능
-  }
-  
-  return Math.max(0, 50 - data.dailyUsage.count)
-}
-
-/**
- * 자동 복사 설정을 가져옵니다
+ * 자동화 및 번역 설정 관리
  */
 export async function getAutoCopyEnabled(): Promise<boolean> {
   const data = await getStorageData()
   return data.settings.autoCopyEnabled
 }
 
-/**
- * 자동 복사 설정을 저장합니다
- */
 export async function setAutoCopyEnabled(enabled: boolean): Promise<void> {
   const data = await getStorageData()
   await setStorageData({
-    settings: {
-      ...data.settings,
-      autoCopyEnabled: enabled
-    }
+    settings: { ...data.settings, autoCopyEnabled: enabled }
   })
 }
 
-/**
- * 자동 복사 톤을 가져옵니다
- */
 export async function getAutoCopyTone(): Promise<'formal' | 'general' | 'friendly'> {
   const data = await getStorageData()
   return data.settings.autoCopyTone
 }
 
-/**
- * 자동 복사 톤을 저장합니다
- */
 export async function setAutoCopyTone(tone: 'formal' | 'general' | 'friendly'): Promise<void> {
+  const data = await getStorageData()
+  await setStorageData({
+    settings: { ...data.settings, autoCopyTone: tone }
+  })
+}
+
+/**
+ * 탭 상태 관리
+ */
+export async function setLastUsedTab(tab: 'tone' | 'translation'): Promise<void> {
+  await setStorageData({ lastUsedTab: tab })
+}
+
+/**
+ * 번역 타겟 언어 관리
+ */
+export async function setTargetLanguage(lang: TargetLanguage): Promise<void> {
   const data = await getStorageData()
   await setStorageData({
     settings: {
       ...data.settings,
-      autoCopyTone: tone
+      translation: { ...data.settings.translation, defaultTargetLanguage: lang }
     }
+  })
+}
+
+/**
+ * 즉시 변환 톤 스타일 설정
+ */
+export async function setInstantToneStyle(style: ToneType): Promise<void> {
+  const data = await getStorageData()
+  await setStorageData({
+    settings: { ...data.settings, instantToneStyle: style }
   })
 }
