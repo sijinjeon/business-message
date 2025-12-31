@@ -9,7 +9,8 @@
     "clipboardWrite",
     "activeTab",
     "scripting",
-    "notifications"
+    "notifications",
+    "alarms"
   ],
   "host_permissions": [
     "https://generativelanguage.googleapis.com/*",
@@ -27,7 +28,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-loader-oHOfSDT8.js"
+        "assets/index.ts-loader-CjlZLSEg.js"
       ],
       "matches": [
         "<all_urls>"
@@ -81,7 +82,7 @@
       "resources": [
         "assets/*.js",
         "assets/*.css",
-        "assets/index.ts-vseXkJzW.js"
+        "assets/index.ts-TAVP8xz5.js"
       ],
       "use_dynamic_url": false
     }

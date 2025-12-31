@@ -1,6 +1,6 @@
 {
   "../../../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-BwSlUR_Z.js",
+    "file": "assets/crx-manifest.js-RfEO7inO.js",
     "name": "crx-manifest.js",
     "src": "../../../../../@crx/manifest",
     "isEntry": true
@@ -13,9 +13,9 @@
     "file": "assets/global-BEE7ePxs.css",
     "src": "_global-BEE7ePxs.css"
   },
-  "_index.ts-loader-oHOfSDT8.js": {
-    "file": "assets/index.ts-loader-oHOfSDT8.js",
-    "src": "_index.ts-loader-oHOfSDT8.js"
+  "_index.ts-loader-CjlZLSEg.js": {
+    "file": "assets/index.ts-loader-CjlZLSEg.js",
+    "src": "_index.ts-loader-CjlZLSEg.js"
   },
   "_storage-DQogxH6w.js": {
     "file": "assets/storage-DQogxH6w.js",
@@ -29,7 +29,7 @@
     "name": "storage-service"
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-5B4oXD8j.js",
+    "file": "assets/index.ts-C0slxQOq.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true,
@@ -39,7 +39,7 @@
     ]
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-vseXkJzW.js",
+    "file": "assets/index.ts-TAVP8xz5.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true,

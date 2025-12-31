@@ -12,6 +12,7 @@
 - **⌨️ 전역 단축키**: 브라우저 어디서든 단축키 하나로 텍스트 번역 및 톤 다듬기 실행
 - **📊 사용량 대시보드**: AI 호출 횟수, 추정 토큰 사용량 및 비용 정보를 한눈에 파악
 - **🤖 멀티 AI 엔진**: Google Gemini 2.5, OpenAI GPT-5.2, Anthropic Claude 4.5 완벽 대응
+- **⚡ 서비스 워커 최적화**: MV3 하트비트(Heartbeat) 메커니즘을 통한 안정적인 백그라운드 작동 보장
 - **🔒 강화된 보안**: AES-GCM 256-bit 암호화로 API 키를 안전하게 보호
 
 ---
@@ -64,7 +65,7 @@ npm run dev
 ```bash
 npm run build
 ```
-빌드된 결과물은 `dist/` 폴더에 생성됩니다.
+빌드된 결과물은 `business-message-extension/` 폴더에 생성됩니다.
 
 ---
 

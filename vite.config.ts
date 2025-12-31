@@ -36,8 +36,10 @@ export default defineConfig({
     __DEV__: process.env.NODE_ENV === 'development'
   },
   server: {
+    port: 5173,
+    strictPort: true,
     hmr: {
-      port: 5174 // Chrome Extension 개발 시 HMR 포트
+      port: 5173
     }
   }
 })
