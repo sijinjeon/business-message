@@ -14,6 +14,7 @@ import { AI_MODELS } from '@/services/ai/models'
 import { AIProvider, TargetLanguage, UsageLog } from '@/types'
 import { encryptData, decryptData } from '@/utils/crypto'
 import { useCommands } from '@/hooks/useCommands'
+import { useCurrency } from '@/hooks/useCurrency'
 
 type ValidationState = 'idle' | 'testing' | 'success' | 'error'
 type MenuId = 'ai-engines' | 'dashboard' | 'general' | 'translation' | 'shortcuts';
@@ -25,6 +26,7 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const [activeMenu, setActiveMenu] = useState<MenuId>('ai-engines')
   const { commands } = useCommands()
+  const { formatCost } = useCurrency()
   
   // AI 설정 상태
   const [selectedProvider, setSelectedProviderState] = useState<AIProvider>('gemini')
@@ -119,9 +121,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       const isValid = !!result
       setValidationState(isValid ? 'success' : 'error')
       setMessage(isValid ? '연결에 성공했습니다!' : '유효하지 않은 API 키입니다.')
-    } catch (err) {
+    } catch (err: any) {
       setValidationState('error')
-      setMessage('연결 테스트 중 오류가 발생했습니다.')
+      setMessage(err.message || '연결 테스트 중 오류가 발생했습니다.')
     }
   }
 
@@ -148,20 +150,43 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               <div className="space-y-1.5">
                 <label className="text-[13px] font-black text-zinc-400 uppercase tracking-widest ml-1">상세 모델</label>
                 <Select value={providerModels[selectedProvider]} onValueChange={(v) => setProviderModels(prev => ({ ...prev, [selectedProvider]: v }))}>
-                  {AI_MODELS[selectedProvider].map(m => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name} (${m.pricePer1M.toFixed(2)} / 1M)
-                    </SelectItem>
-                  ))}
+                  {AI_MODELS[selectedProvider].map(m => {
+                    const costs = formatCost(m.pricePer1M);
+                    return (
+                      <SelectItem key={m.id} value={m.id}>
+                        <div className="flex flex-col items-start leading-tight">
+                          <span>{m.name}</span>
+                          <span className="text-[10px] text-zinc-400 font-bold">
+                            {costs.krw} ({costs.usd}) / 1M
+                          </span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-[13px] font-black text-zinc-400 uppercase tracking-widest ml-1">API KEY</label>
-                  <button onClick={handleTestConnection} disabled={validationState === 'testing'} className="text-[12px] font-black text-zinc-400 hover:text-zinc-900 transition-colors flex items-center gap-1">
-                    {validationState === 'testing' ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <ExternalLink className="w-2.5 h-2.5" />}
-                    연결 테스트
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <a 
+                      href={
+                        selectedProvider === 'gemini' ? 'https://aistudio.google.com/app/api-keys' :
+                        selectedProvider === 'chatgpt' ? 'https://platform.openai.com/api-keys' :
+                        'https://platform.claude.com/settings/keys'
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[12px] font-black text-blue-500 hover:text-blue-600 transition-colors flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-2.5 h-2.5" />
+                      발급받기
+                    </a>
+                    <button onClick={handleTestConnection} disabled={validationState === 'testing'} className="text-[12px] font-black text-zinc-400 hover:text-zinc-900 transition-colors flex items-center gap-1">
+                      {validationState === 'testing' ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <ExternalLink className="w-2.5 h-2.5" />}
+                      연결 테스트
+                    </button>
+                  </div>
                 </div>
                 <Input type="password" value={apiKeys[selectedProvider]} onChange={(e) => setApiKeys(prev => ({ ...prev, [selectedProvider]: e.target.value }))} placeholder="인증 키를 입력하세요" className="bg-zinc-50 border-zinc-100 font-mono text-base rounded-xl focus:bg-white h-11" />
               </div>
@@ -170,7 +195,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
             <div className="grid grid-cols-3 gap-3">
               <UsageCard label="오늘" value={`${stats.today}회`} icon={<TrendingUp className="w-3 h-3" />} />
               <UsageCard label="최근 7일" value={`${stats.week}회`} icon={<History className="w-3 h-3" />} />
-              <UsageCard label="누적 비용" value={`$${stats.totalCost.toFixed(4)}`} icon={<BarChart3 className="w-3 h-3" />} />
+              <UsageCard 
+                label="누적 비용" 
+                value={(() => {
+                  const costs = formatCost(stats.totalCost);
+                  return (
+                    <div className="flex flex-col">
+                      <span className="text-base font-black">{costs.krw}</span>
+                      <span className="text-[10px] text-zinc-400 font-bold -mt-1">{costs.usd}</span>
+                    </div>
+                  );
+                })()} 
+                icon={<BarChart3 className="w-3 h-3" />} 
+              />
             </div>
           </div>
         )
@@ -184,7 +221,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               </div>
               <div className="p-4 bg-white rounded-[24px] border border-zinc-100 space-y-1 shadow-sm">
                 <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">총 추정 비용</span>
-                <div className="text-3xl font-black text-zinc-900">${stats.totalCost.toFixed(4)}</div>
+                {(() => {
+                  const costs = formatCost(stats.totalCost);
+                  return (
+                    <div className="flex flex-col">
+                      <div className="text-2xl font-black text-zinc-900">{costs.krw}</div>
+                      <div className="text-[11px] text-zinc-400 font-bold">{costs.usd}</div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
             <div className="p-5 bg-white rounded-[32px] border border-zinc-100 shadow-sm overflow-hidden h-64 flex flex-col items-center justify-center text-zinc-300">
@@ -375,7 +420,7 @@ function SideMenu({ active, onClick, icon, label }: SideMenuProps) {
 
 interface UsageCardProps {
   label: string
-  value: string
+  value: React.ReactNode
   icon: React.ReactNode
 }
 
@@ -384,7 +429,13 @@ function UsageCard({ label, value, icon }: UsageCardProps) {
     <div className="p-4 bg-zinc-50/50 rounded-2xl border border-zinc-100/50 flex flex-col items-center justify-center text-center space-y-1">
       <div className="text-zinc-400 mb-0.5">{icon}</div>
       <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">{label}</span>
-      <span className="text-base font-black text-zinc-900">{value}</span>
+      <div className="text-zinc-900 font-black">
+        {typeof value === 'string' ? (
+          <span className="text-base">{value}</span>
+        ) : (
+          value
+        )}
+      </div>
     </div>
   )
 }

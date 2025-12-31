@@ -15,6 +15,7 @@ import { AI_MODELS } from '@/services/ai/models'
 import { AIProvider, TargetLanguage, UsageLog } from '@/types'
 import { encryptData, decryptData } from '@/utils/crypto'
 import { useCommands } from '@/hooks/useCommands'
+import { useCurrency } from '@/hooks/useCurrency'
 
 type ValidationState = 'idle' | 'testing' | 'success' | 'error'
 type MenuId = 'general' | 'ai-engines' | 'translation' | 'shortcuts' | 'dashboard';
@@ -22,6 +23,7 @@ type MenuId = 'general' | 'ai-engines' | 'translation' | 'shortcuts' | 'dashboar
 function SettingsPage() {
   const [activeMenu, setActiveMenu] = useState<MenuId>('ai-engines')
   const { commands } = useCommands()
+  const { formatCost } = useCurrency()
   
   // AI 설정 상태
   const [selectedProvider, setSelectedProviderState] = useState<AIProvider>('gemini')
@@ -143,10 +145,10 @@ function SettingsPage() {
       const isValid = !!result
       setValidationState(isValid ? 'success' : 'error')
       setMessage(isValid ? '연결에 성공했습니다!' : '유효하지 않은 API 키입니다.')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Test error:', err)
       setValidationState('error')
-      setMessage('연결 테스트 중 오류가 발생했습니다.')
+      setMessage(err.message || '연결 테스트 중 오류가 발생했습니다.')
     }
   }
 
@@ -276,20 +278,43 @@ function SettingsPage() {
                       <div className="flex-[1.5] space-y-2">
                         <label className="text-sm font-bold text-zinc-400 uppercase tracking-widest ml-1">상세 모델</label>
                         <Select value={providerModels[selectedProvider]} onValueChange={(v) => setProviderModels(prev => ({ ...prev, [selectedProvider]: v }))}>
-                          {AI_MODELS[selectedProvider].map(m => (
-                            <SelectItem key={m.id} value={m.id}>
-                              {m.name} (${m.pricePer1M.toFixed(2)} / 1M)
-                            </SelectItem>
-                          ))}
+                          {AI_MODELS[selectedProvider].map(m => {
+                            const costs = formatCost(m.pricePer1M);
+                            return (
+                              <SelectItem key={m.id} value={m.id}>
+                                <div className="flex flex-col py-0.5">
+                                  <span className="font-bold">{m.name}</span>
+                                  <span className="text-[10px] text-zinc-400 font-medium">
+                                    {costs.krw} ({costs.usd}) / 1M tokens
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
                         </Select>
                       </div>
                       <div className="flex-[2] space-y-2">
                         <div className="flex items-center justify-between">
                           <label className="text-sm font-bold text-zinc-400 uppercase tracking-widest ml-1">API KEY</label>
-                          <button onClick={handleTestConnection} disabled={validationState === 'testing'} className="text-sm font-bold text-zinc-500 hover:text-zinc-900 flex items-center gap-1">
-                            {validationState === 'testing' ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <ExternalLink className="w-2.5 h-2.5" />}
-                            연결 테스트
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <a 
+                              href={
+                                selectedProvider === 'gemini' ? 'https://aistudio.google.com/app/api-keys' :
+                                selectedProvider === 'chatgpt' ? 'https://platform.openai.com/api-keys' :
+                                'https://platform.claude.com/settings/keys'
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                            >
+                              <ExternalLink className="w-2.5 h-2.5" />
+                              API 키 발급받기
+                            </a>
+                            <button onClick={handleTestConnection} disabled={validationState === 'testing'} className="text-sm font-bold text-zinc-500 hover:text-zinc-900 flex items-center gap-1">
+                              {validationState === 'testing' ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <ExternalLink className="w-2.5 h-2.5" />}
+                              연결 테스트
+                            </button>
+                          </div>
                         </div>
                         <Input type="password" value={apiKeys[selectedProvider]} onChange={(e) => setApiKeys(prev => ({ ...prev, [selectedProvider]: e.target.value }))} placeholder="인증 키를 입력하세요" className="h-11 bg-zinc-50 border-zinc-200 font-mono text-base rounded-xl focus:bg-white transition-all" />
                       </div>
@@ -342,7 +367,20 @@ function SettingsPage() {
                     {/* Charts / KPIs */}
                     <div className="grid grid-cols-4 gap-4">
                       <DashboardKPI label="총 호출" value={`${filteredLogs.length}회`} icon={<TrendingUp className="w-3 h-3" />} />
-                      <DashboardKPI label="총 비용" value={`$${filteredLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0).toFixed(4)}`} icon={<BarChart3 className="w-3 h-3" />} />
+                      <DashboardKPI 
+                        label="총 비용" 
+                        value={(() => {
+                          const totalUSD = filteredLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0);
+                          const costs = formatCost(totalUSD);
+                          return (
+                            <div className="flex flex-col">
+                              <span className="text-2xl font-black">{costs.krw}</span>
+                              <span className="text-[11px] text-zinc-400 font-bold -mt-1">{costs.usd}</span>
+                            </div>
+                          );
+                        })()} 
+                        icon={<BarChart3 className="w-3 h-3" />} 
+                      />
                       <DashboardKPI label="평균 응답" value="1.2s" icon={<Loader2 className="w-3 h-3" />} />
                       <DashboardKPI label="추정 토큰" value={`${Math.round(filteredLogs.reduce((acc, curr) => acc + (curr.inputTokens || 0) + (curr.outputTokens || 0), 0) / 1000)}K`} icon={<Cpu className="w-3 h-3" />} />
                     </div>
@@ -417,7 +455,17 @@ function SettingsPage() {
                                   </span>
                                 </td>
                                 <td className="px-6 py-4 font-mono text-zinc-500">{log.inputTokens}/{log.outputTokens}</td>
-                                <td className="px-6 py-4 font-bold text-zinc-900">${(log.cost || 0).toFixed(6)}</td>
+                                <td className="px-6 py-4">
+                                  {(() => {
+                                    const costs = formatCost(log.cost || 0);
+                                    return (
+                                      <div className="flex flex-col">
+                                        <span className="font-bold text-zinc-900">{costs.krw}</span>
+                                        <span className="text-[10px] text-zinc-400 font-bold -mt-1">{costs.usd}</span>
+                                      </div>
+                                    );
+                                  })()}
+                                </td>
                               </tr>
                             ))}
                             {filteredLogs.length === 0 && (
@@ -564,7 +612,7 @@ function ShortcutItem({ label, shortcut }: { label: string, shortcut: string }) 
 
 interface DashboardKPIProps {
   label: string
-  value: string
+  value: React.ReactNode
   icon: React.ReactNode
 }
 
@@ -575,7 +623,13 @@ function DashboardKPI({ label, value, icon }: DashboardKPIProps) {
         {icon}
         {label}
       </div>
-      <div className="text-2xl font-black text-zinc-900">{value}</div>
+      <div className="text-zinc-900">
+        {typeof value === 'string' ? (
+          <div className="text-2xl font-black">{value}</div>
+        ) : (
+          value
+        )}
+      </div>
     </div>
   )
 }

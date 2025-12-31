@@ -8,7 +8,8 @@
     "clipboardRead",
     "clipboardWrite",
     "activeTab",
-    "scripting"
+    "scripting",
+    "notifications"
   ],
   "host_permissions": [
     "https://generativelanguage.googleapis.com/*",
@@ -26,23 +27,26 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-loader-B2XeQB4T.js"
+        "assets/index.ts-loader-oHOfSDT8.js"
       ],
       "matches": [
         "<all_urls>"
       ],
       "run_at": "document_idle",
       "css": [
-        "assets/global-CC9kDKAs.css"
+        "assets/global-BEE7ePxs.css"
       ]
     }
   ],
   "commands": {
-    "tone-conversion": {
+    "_execute_action": {
       "suggested_key": {
         "default": "Alt+Shift+C",
         "mac": "Command+Shift+Y"
       },
+      "description": "BCA 팝업 열기 (클립보드 톤 변환)"
+    },
+    "tone-conversion": {
       "description": "클립보드 텍스트를 정중한 문장으로 변환 (팝업)"
     },
     "instant-translation": {
@@ -55,7 +59,7 @@
     "instant-tone-conversion": {
       "suggested_key": {
         "default": "Ctrl+Shift+C",
-        "mac": "Command+Shift+E"
+        "mac": "Command+Shift+C"
       },
       "description": "선택한 텍스트 즉시 정중한 문장 변환"
     }
@@ -77,7 +81,7 @@
       "resources": [
         "assets/*.js",
         "assets/*.css",
-        "assets/index.ts-BSPEGB_E.js"
+        "assets/index.ts-vseXkJzW.js"
       ],
       "use_dynamic_url": false
     }

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { AIOrchestrator } from '../services/ai/ai-orchestrator';
 import { AITask, AIServiceOptions, AIApiResponse, LoadingState } from '../types';
+import { handleApiError } from '../utils/errorHandler';
 
 export function useAICall() {
   const [loadingState, setLoadingState] = useState<LoadingState>('idle');
@@ -20,8 +21,9 @@ export function useAICall() {
       return response;
     } catch (err: any) {
       console.error('AI Call failed:', err);
+      const appError = handleApiError(err);
       setLoadingState('error');
-      setError(err.message || 'AI 서비스 호출 중 오류가 발생했습니다.');
+      setError(appError.userMessage || appError.message);
       return null;
     }
   }, []);

@@ -8,7 +8,8 @@
     "clipboardRead",
     "clipboardWrite",
     "activeTab",
-    "scripting"
+    "scripting",
+    "notifications"
   ],
   "host_permissions": [
     "https://generativelanguage.googleapis.com/*",
@@ -31,11 +32,14 @@
     }
   ],
   "commands": {
-    "tone-conversion": {
+    "_execute_action": {
       "suggested_key": {
         "default": "Alt+Shift+C",
         "mac": "Command+Shift+Y"
       },
+      "description": "BCA 팝업 열기 (클립보드 톤 변환)"
+    },
+    "tone-conversion": {
       "description": "클립보드 텍스트를 정중한 문장으로 변환 (팝업)"
     },
     "instant-translation": {
@@ -48,7 +52,7 @@
     "instant-tone-conversion": {
       "suggested_key": {
         "default": "Ctrl+Shift+C",
-        "mac": "Command+Shift+E"
+        "mac": "Command+Shift+C"
       },
       "description": "선택한 텍스트 즉시 정중한 문장 변환"
     }

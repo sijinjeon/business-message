@@ -1,7 +1,8 @@
 import { AppStorage, AIProvider, TargetLanguage, ToneType } from '@/types'
 import { encryptData, decryptData } from './crypto'
+import { AI_MODELS } from '@/services/ai/models'
 
-// 기본 설정값 (v2.2)
+// 기본 설정값 (v2.3 - 2026 기준)
 const DEFAULT_STORAGE: AppStorage = {
   apiKeys: {
     gemini: '',
@@ -16,9 +17,9 @@ const DEFAULT_STORAGE: AppStorage = {
   settings: {
     selectedProvider: 'gemini',
     providerModels: {
-      gemini: 'gemini-3-flash',
+      gemini: 'gemini-2.5-flash',
       chatgpt: 'gpt-5.2',
-      claude: 'claude-4-5-sonnet'
+      claude: 'claude-sonnet-4-5-20250929'
     },
     temperature: 0.7,
     maxOutputTokens: 1024,
@@ -41,7 +42,7 @@ export async function getStorageData(): Promise<AppStorage> {
   try {
     const result = await chrome.storage.local.get(null)
     
-    // v2.2 마이그레이션 및 기본값 병합
+    // 기본값 병합
     const mergedData = { ...DEFAULT_STORAGE, ...result }
     
     // usageLogs 보장
@@ -56,6 +57,24 @@ export async function getStorageData(): Promise<AppStorage> {
     mergedData.settings.providerModels = {
       ...DEFAULT_STORAGE.settings.providerModels,
       ...result.settings?.providerModels
+    }
+
+    // 모델 ID 최신화 마이그레이션 (2026 기준)
+    if (mergedData.settings.providerModels.claude === 'claude-4-5-sonnet') {
+      mergedData.settings.providerModels.claude = 'claude-sonnet-4-5-20250929';
+    }
+    if (mergedData.settings.providerModels.claude === 'claude-4-5-haiku') {
+      mergedData.settings.providerModels.claude = 'claude-haiku-4-5-20251001';
+    }
+    if (mergedData.settings.providerModels.claude === 'claude-3-5-sonnet-latest') {
+      mergedData.settings.providerModels.claude = 'claude-3-5-sonnet-20241022';
+    }
+
+    if (mergedData.settings.providerModels.gemini === 'gemini-1.5-flash') {
+      mergedData.settings.providerModels.gemini = 'gemini-2.5-flash';
+    }
+    if (mergedData.settings.providerModels.chatgpt === 'gpt-4o-mini') {
+      mergedData.settings.providerModels.chatgpt = 'gpt-5.2';
     }
 
     return mergedData
@@ -153,7 +172,6 @@ export async function logUsage(payload: {
   outputTokens?: number;
 }): Promise<void> {
   const data = await getStorageData()
-  const { AI_MODELS } = await import('@/services/ai/models')
   
   // 가격 정보 가져오기 (1M 토큰당 가격)
   const models = AI_MODELS[payload.provider] || []

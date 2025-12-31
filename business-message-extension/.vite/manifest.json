@@ -1,84 +1,77 @@
 {
   "../../../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-BM8P5CJS.js",
+    "file": "assets/crx-manifest.js-BwSlUR_Z.js",
     "name": "crx-manifest.js",
     "src": "../../../../../@crx/manifest",
     "isEntry": true
   },
-  "_crypto-ex6r7ieV.js": {
-    "file": "assets/crypto-ex6r7ieV.js",
+  "_crypto-DogMPkOD.js": {
+    "file": "assets/crypto-DogMPkOD.js",
     "name": "crypto"
   },
-  "_global-CC9kDKAs.css": {
-    "file": "assets/global-CC9kDKAs.css",
-    "src": "_global-CC9kDKAs.css"
+  "_global-BEE7ePxs.css": {
+    "file": "assets/global-BEE7ePxs.css",
+    "src": "_global-BEE7ePxs.css"
   },
-  "_index.ts-loader-B2XeQB4T.js": {
-    "file": "assets/index.ts-loader-B2XeQB4T.js",
-    "src": "_index.ts-loader-B2XeQB4T.js"
+  "_index.ts-loader-oHOfSDT8.js": {
+    "file": "assets/index.ts-loader-oHOfSDT8.js",
+    "src": "_index.ts-loader-oHOfSDT8.js"
   },
-  "_storage-Ce3jUJWf.js": {
-    "file": "assets/storage-Ce3jUJWf.js",
+  "_storage-DQogxH6w.js": {
+    "file": "assets/storage-DQogxH6w.js",
     "name": "storage",
-    "dynamicImports": [
-      "src/services/ai/models.ts"
+    "imports": [
+      "_crypto-DogMPkOD.js"
     ]
   },
-  "_storage-service-DubB-ORg.js": {
-    "file": "assets/storage-service-DubB-ORg.js",
+  "_storage-service-FUU9XJQq.js": {
+    "file": "assets/storage-service-FUU9XJQq.js",
     "name": "storage-service"
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-BZpL_eZw.js",
+    "file": "assets/index.ts-5B4oXD8j.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true,
     "imports": [
-      "_crypto-ex6r7ieV.js",
-      "_storage-Ce3jUJWf.js"
+      "_crypto-DogMPkOD.js",
+      "_storage-DQogxH6w.js"
     ]
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-BSPEGB_E.js",
+    "file": "assets/index.ts-vseXkJzW.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true,
     "css": [
-      "assets/global-CC9kDKAs.css"
+      "assets/global-BEE7ePxs.css"
     ]
   },
   "src/options/index.html": {
-    "file": "assets/index.html-Bg-_gHdv.js",
+    "file": "assets/index.html-ePhTienI.js",
     "name": "index.html",
     "src": "src/options/index.html",
     "isEntry": true,
     "imports": [
-      "_storage-service-DubB-ORg.js",
-      "_crypto-ex6r7ieV.js",
-      "src/services/ai/models.ts"
+      "_storage-service-FUU9XJQq.js",
+      "_crypto-DogMPkOD.js"
     ],
     "css": [
-      "assets/global-CC9kDKAs.css"
+      "assets/global-BEE7ePxs.css"
     ]
   },
   "src/popup/index.html": {
-    "file": "assets/index.html-CCxHg3xc.js",
+    "file": "assets/index.html-C6GA6YQn.js",
     "name": "index.html",
     "src": "src/popup/index.html",
     "isEntry": true,
     "imports": [
-      "_storage-service-DubB-ORg.js",
-      "_crypto-ex6r7ieV.js",
-      "_storage-Ce3jUJWf.js"
+      "_storage-service-FUU9XJQq.js",
+      "_crypto-DogMPkOD.js",
+      "_storage-DQogxH6w.js"
     ],
     "css": [
-      "assets/global-CC9kDKAs.css"
+      "assets/global-BEE7ePxs.css"
     ]
-  },
-  "src/services/ai/models.ts": {
-    "file": "assets/models-CtQ6fdnb.js",
-    "name": "models",
-    "src": "src/services/ai/models.ts",
-    "isDynamicEntry": true
   }
 }

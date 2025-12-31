@@ -9,9 +9,9 @@ const DEFAULT_STORAGE: AppStorage = {
   settings: {
     selectedProvider: 'gemini',
     providerModels: {
-      gemini: 'gemini-3-flash',
+      gemini: 'gemini-2.5-flash',
       chatgpt: 'gpt-5.2',
-      claude: 'claude-4-5-sonnet'
+      claude: 'claude-sonnet-4-5-20250929'
     },
     temperature: 0.7,
     maxOutputTokens: 1024,
@@ -33,7 +33,30 @@ export class StorageService {
    */
   static async getAll(): Promise<AppStorage> {
     const result = await chrome.storage.local.get(null);
-    return this.deepMerge(DEFAULT_STORAGE, result) as AppStorage;
+    const data = this.deepMerge(DEFAULT_STORAGE, result) as AppStorage;
+    
+    // 모델 ID 최신화 마이그레이션 (2026 기준)
+    // 4.5 계열 오타 수정
+    if (data.settings.providerModels.claude === 'claude-4-5-sonnet') {
+      data.settings.providerModels.claude = 'claude-sonnet-4-5-20250929';
+    }
+    if (data.settings.providerModels.claude === 'claude-4-5-haiku') {
+      data.settings.providerModels.claude = 'claude-haiku-4-5-20251001';
+    }
+    
+    // 3.5 계열: latest가 404를 반환하므로 명시적인 버전으로 마이그레이션
+    if (data.settings.providerModels.claude === 'claude-3-5-sonnet-latest') {
+      data.settings.providerModels.claude = 'claude-3-5-sonnet-20241022';
+    }
+    
+    if (data.settings.providerModels.gemini === 'gemini-1.5-flash') {
+      data.settings.providerModels.gemini = 'gemini-2.5-flash';
+    }
+    if (data.settings.providerModels.chatgpt === 'gpt-4o-mini') {
+      data.settings.providerModels.chatgpt = 'gpt-5.2';
+    }
+    
+    return data;
   }
 
   /**
@@ -80,4 +103,3 @@ export class StorageService {
     return output;
   }
 }
-

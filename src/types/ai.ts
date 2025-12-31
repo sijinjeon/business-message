@@ -16,9 +16,9 @@ export type ToneType = 'formal' | 'general' | 'friendly';
 
 // API 응답 타입 (톤 변환용)
 export interface AIApiResponse {
-  formal: string;
-  general: string;
-  friendly: string;
+  formal?: string;
+  general?: string;
+  friendly?: string;
 }
 
 // 번역 응답 타입
@@ -35,6 +35,7 @@ export interface AIServiceOptions {
   model: string;
   apiKey: string;
   targetLanguage?: string;
+  tone?: ToneType;
 }
 
 // 제공자별 상세 요청 인터페이스

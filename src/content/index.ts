@@ -12,6 +12,9 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   console.log(`Content Script received action: ${request.action}`);
 
   switch (request.action) {
+    case 'PING':
+      sendResponse({ success: true, message: 'pong' });
+      break;
     case 'GET_SELECTED_TEXT':
       // 로딩 UI와 함께 텍스트 추출
       sendResponse({ text: prepareSelectionForReplacement() });

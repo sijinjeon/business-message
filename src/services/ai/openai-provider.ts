@@ -6,7 +6,7 @@ export class OpenAIProvider extends BaseAIProvider {
 
   async call(text: string, task: AITask, options: AIServiceOptions): Promise<string> {
     const isJson = task === 'tone-conversion';
-    const prompt = this.buildPrompt(text, task, options.targetLanguage);
+    const prompt = this.buildPrompt(text, task, options);
     const endpoint = 'https://api.openai.com/v1/chat/completions';
 
     const payload: OpenAIApiRequest = {

@@ -23,11 +23,20 @@ export function handleApiError(error: unknown): AppError {
         '네트워크 연결을 확인해주세요.'
       )
     }
+
+    // 할당량 초과 (429)
+    if (error.message.includes('429') || error.message.toLowerCase().includes('quota exceeded')) {
+      return new AppError(
+        'Quota Exceeded',
+        'RATE_LIMIT_ERROR',
+        'AI 서비스 호출 한도를 초과했습니다. 잠시 후(약 1분) 다시 시도하거나, 설정에서 다른 모델 또는 API 키를 확인해주세요.'
+      )
+    }
     
     return new AppError(
       error.message,
       'UNKNOWN_ERROR',
-      '알 수 없는 오류가 발생했습니다.'
+      error.message || '알 수 없는 오류가 발생했습니다.'
     )
   }
   

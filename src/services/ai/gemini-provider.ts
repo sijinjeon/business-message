@@ -6,7 +6,7 @@ export class GeminiProvider extends BaseAIProvider {
 
   async call(text: string, task: AITask, options: AIServiceOptions): Promise<string> {
     const isJson = task === 'tone-conversion';
-    const prompt = this.buildPrompt(text, task, options.targetLanguage);
+    const prompt = this.buildPrompt(text, task, options);
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${options.model}:generateContent?key=${options.apiKey}`;
 
     const payload: GeminiApiRequest = {
@@ -27,9 +27,23 @@ export class GeminiProvider extends BaseAIProvider {
       body: JSON.stringify(payload)
     });
 
-    if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Gemini API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+    }
+
     const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+    
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error('Gemini API Error: No candidates returned. This might be due to safety filters.');
+    }
+
+    const content = data.candidates[0].content;
+    if (!content || !content.parts || content.parts.length === 0) {
+      throw new Error('Gemini API Error: Empty content in response.');
+    }
+
+    return content.parts[0].text;
   }
 }
 

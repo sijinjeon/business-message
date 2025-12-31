@@ -98,3 +98,7 @@ interface DB_Schema {
 리팩토링 시 Cursor AI에게 다음과 같이 지시하세요:
 > "현재 `App.tsx`에 있는 변환 로직을 `useToneConversion` 커스텀 훅으로 분리해줘. `src/services/ai-core.ts`를 사용하고 로딩 상태는 TanStack Query를 적용해."
 
+
+
+
+

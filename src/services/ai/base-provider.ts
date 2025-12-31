@@ -1,4 +1,4 @@
-import { AITask, AIServiceOptions, AIApiResponse } from '../../types';
+import { AITask, AIServiceOptions } from '../../types';
 
 export abstract class BaseAIProvider {
   abstract name: string;
@@ -11,14 +11,14 @@ export abstract class BaseAIProvider {
   /**
    * 태스크별 프롬프트 생성 (공통 로직)
    */
-  protected buildPrompt(text: string, task: AITask, targetLanguage?: string): string {
+  protected buildPrompt(text: string, task: AITask, options: AIServiceOptions): string {
     if (task === 'translation') {
       return `
 # Role
 Professional translator.
 
 # Task
-Translate the following text to ${targetLanguage || 'Korean'}.
+Translate the following text to ${options.targetLanguage || 'Korean'}.
 
 # Critical Rules
 1. PRESERVE ALL LINE BREAKS (\\n) EXACTLY.
@@ -32,42 +32,65 @@ ${text}
 `;
     }
 
-    return `
+    if (options.tone) {
+      const toneLabels: Record<string, string> = {
+        formal: '매우 격식 있고 예의 바른 비즈니스 어조 (공식적인 메일이나 공지에 적합)',
+        general: '정중하면서도 부드러운 일상적인 비즈니스 어조 (팀 내 협업이나 일반적인 대화에 적합)',
+        friendly: '간결하고 친근한 어조 (가까운 동료나 편안한 사이에 적합)'
+      };
+
+      return `
 # Role
 한국 직장 문화와 커뮤니케이션에 능숙한 AI 어시스턴트.
 
 # Instruction
-주어진 'Original Text'를 아래 JSON 형식에 맞춰 세 가지 톤(격식/일반/친근)으로 변환하세요.
+주어진 'Original Text'를 아래 톤으로 변환하여 반드시 지정된 JSON 형식으로만 응답하세요.
 
-# Output Format
-반드시 아래 JSON 형식으로만 응답하세요. 설명은 생략합니다.
+# Tone
+${options.tone}: ${toneLabels[options.tone]}
+
+# Critical Rules
+- 반드시 아래 JSON 구조를 유지하세요.
+- 설명이나 인사말 등 JSON 이외의 텍스트는 절대 포함하지 마세요.
+- 원문의 의미를 훼손하지 않으면서 톤만 자연스럽게 변경하세요.
+
+# Output Format (JSON ONLY)
 {
-  "formal": "정중하고 전문적인 어조",
-  "general": "정중하고 부드러운 톤",
-  "friendly": "간결하고 친근한 톤"
+  "${options.tone}": "..."
 }
 
 # Original Text
 ${text}
 `;
-  }
-
-  /**
-   * JSON 응답 파싱 (톤 변환용)
-   */
-  protected parseJsonResponse(text: string): AIApiResponse {
-    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('유효한 JSON 응답을 찾을 수 없습니다.');
-    
-    try {
-      const parsed = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-      if (!parsed.formal || !parsed.general || !parsed.friendly) {
-        throw new Error('필수 필드가 누락되었습니다.');
-      }
-      return parsed;
-    } catch (e) {
-      throw new Error('AI 응답 파싱 실패');
     }
+
+    return `
+# Role
+한국 직장 문화와 커뮤니케이션에 능숙한 AI 어시스턴트.
+
+# Instruction
+주어진 'Original Text'를 아래 세 가지 톤으로 변환하여 반드시 지정된 JSON 형식으로만 응답하세요.
+
+# Tones
+1. formal: 매우 격식 있고 예의 바른 비즈니스 어조 (공식적인 메일이나 공지에 적합)
+2. general: 정중하면서도 부드러운 일상적인 비즈니스 어조 (팀 내 협업이나 일반적인 대화에 적합)
+3. friendly: 간결하고 친근한 어조 (가까운 동료나 편안한 사이에 적합)
+
+# Critical Rules
+- 반드시 아래 JSON 구조를 유지하세요.
+- 설명이나 인사말 등 JSON 이외의 텍스트는 절대 포함하지 마세요.
+- 원문의 의미를 훼손하지 않으면서 톤만 자연스럽게 변경하세요.
+
+# Output Format (JSON ONLY)
+{
+  "formal": "...",
+  "general": "...",
+  "friendly": "..."
+}
+
+# Original Text
+${text}
+`;
   }
 }
 

@@ -4,7 +4,7 @@ export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
 export interface AppState {
   inputText: string;
-  results: AIApiResponse | null;
+  results: Partial<AIApiResponse> | null;
   translationResult: string | null;
   activeTab: 'tone' | 'translation';
   loadingState: LoadingState;
@@ -18,9 +18,11 @@ export type TabId = 'tone' | 'translation';
 // 컴포넌트 Props 타입 정의
 export interface ResultCardProps {
   tone: ToneType;
-  text: string;
+  text?: string;
   onCopy: (text: string) => Promise<void> | void;
   isDefaultSelected?: boolean;
+  onConvert?: (tone: ToneType) => void;
+  isLoading?: boolean;
 }
 
 export interface TextInputProps {
