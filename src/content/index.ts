@@ -27,7 +27,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       break;
 
     case 'REPLACE_SELECTED_TEXT':
-      replaceSelectedText(request.text);
+      replaceSelectedText(request.text, request.append);
       sendResponse({ success: true });
       break;
 

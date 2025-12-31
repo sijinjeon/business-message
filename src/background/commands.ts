@@ -43,6 +43,9 @@ export function setupCommandListeners() {
 }
 
 /**
+ * 안전한 메시지 전송 유틸리티
+ */
+/**
  * 컨텐츠 스크립트가 로드되었는지 확인하고, 필요시 주입 시도
  */
 async function ensureContentScriptReady(tabId: number): Promise<boolean> {
@@ -57,7 +60,7 @@ async function ensureContentScriptReady(tabId: number): Promise<boolean> {
         files: ['src/content/index.ts']
       });
       // 주입 후 잠시 대기
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 100));
       return true;
     } catch (injectError) {
       console.error('[BCA] Failed to inject content script:', injectError);
@@ -75,7 +78,7 @@ async function safeSendMessage(tabId: number, message: any) {
     const ready = await ensureContentScriptReady(tabId);
     if (!ready) {
       console.warn(`[BCA] Content script not ready on tab ${tabId}`);
-      return null;
+      throw new Error('Content script not ready');
     }
 
     return await chrome.tabs.sendMessage(tabId, message);
@@ -241,7 +244,8 @@ async function handleInstantTranslation() {
     if (result.success) {
       await safeSendMessage(tab.id, {
         action: 'REPLACE_SELECTED_TEXT',
-        text: result.translatedText
+        text: result.translatedText,
+        append: true
       });
       
       await logUsage({
