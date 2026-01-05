@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "비즈니스 커뮤니케이션 어시스턴트",
-  "version": "2.3.0",
+  "version": "2.5.1",
   "description": "정중한 문장 변환 및 AI 즉시 번역 기능을 제공하는 지능형 커뮤니케이션 도구입니다.",
   "permissions": [
     "storage",

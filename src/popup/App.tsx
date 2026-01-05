@@ -354,7 +354,7 @@ function App() {
           Secured by {settings?.selectedProvider.toUpperCase() || 'AI'}
         </div>
         <div className="flex items-center gap-4">
-          <span>v2.3.0</span>
+          <span>v2.5.1</span>
         </div>
       </footer>
     </div>
