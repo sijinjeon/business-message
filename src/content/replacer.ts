@@ -47,13 +47,9 @@ export function prepareSelectionForReplacement(): string {
 
 /**
  * 선택된 텍스트를 새로운 텍스트로 대체
+ * @param newText 변환된 텍스트
  */
-/**
- * 선택된 텍스트를 새로운 텍스트로 대체하거나 아래에 추가
- * @param newText 변환/번역된 텍스트
- * @param append 원본을 유지하고 아래에 추가할지 여부
- */
-export function replaceSelectedText(newText: string, append: boolean = false) {
+export function replaceSelectedText(newText: string) {
   // 로딩 인디케이터 제거
   const loading = document.getElementById('bca-selection-loading');
   if (loading) {
@@ -64,74 +60,30 @@ export function replaceSelectedText(newText: string, append: boolean = false) {
   if (!selection || selection.rangeCount === 0) return;
 
   const range = selection.getRangeAt(0);
-  
+
   // 1. 입력 폼(Textarea, Input) 내 선택 영역 처리
   const activeElement = document.activeElement;
   if (activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLInputElement) {
     const start = activeElement.selectionStart || 0;
     const end = activeElement.selectionEnd || 0;
     const val = activeElement.value;
-    
-    if (append) {
-      // 원문 유지 + 아래에 추가
-      const separator = val.includes('\n') ? '\n' : ' ';
-      const appendText = `${separator}[번역] ${newText}`;
-      activeElement.value = val.slice(0, end) + appendText + val.slice(end);
-      activeElement.selectionStart = activeElement.selectionEnd = end + appendText.length;
-    } else {
-      // 완전 대체
-      activeElement.value = val.slice(0, start) + newText + val.slice(end);
-      activeElement.selectionStart = activeElement.selectionEnd = start + newText.length;
-    }
+
+    activeElement.value = val.slice(0, start) + newText + val.slice(end);
+    activeElement.selectionStart = activeElement.selectionEnd = start + newText.length;
     return;
   }
 
   // 2. 일반 DOM 요소 (contentEditable 포함) 처리
-  if (append) {
-    // 원문 유지하고 아래에 추가
-    range.collapse(false); // 선택 영역 끝으로 이동
-
-    const container = document.createElement('div');
-    container.className = 'bca-translation-block';
-    // 인라인 스타일로 기본 디자인 적용 (global.css 영향 최소화 및 확실한 구분)
-    container.style.color = '#2563eb'; // blue-600
-    container.style.fontSize = '0.95em';
-    container.style.marginTop = '8px';
-    container.style.marginBottom = '8px';
-    container.style.padding = '8px 12px';
-    container.style.borderLeft = '3px solid #3b82f6';
-    container.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
-    container.style.whiteSpace = 'pre-wrap';
-    container.style.borderRadius = '4px';
-    container.style.lineHeight = '1.6';
-    container.style.display = 'block';
-    container.style.fontFamily = 'sans-serif';
-    container.style.textAlign = 'left';
-    
-    container.textContent = newText;
-    
-    try {
-      range.insertNode(container);
-      // 삽입 후 선택 해제
-      selection.removeAllRanges();
-    } catch (e) {
-      console.error('Error inserting translation block:', e);
-      // 폴백: 단순 텍스트 삽입
-      range.insertNode(document.createTextNode(` [번역: ${newText}]`));
-    }
-  } else {
-    // 기존 로직: 대체 (document.execCommand 사용)
-    try {
-      const success = document.execCommand('insertText', false, newText);
-      if (!success) {
-        // execCommand 실패 시 Range 수동 조작
-        range.deleteContents();
-        range.insertNode(document.createTextNode(newText));
-      }
-    } catch (e) {
+  try {
+    const success = document.execCommand('insertText', false, newText);
+    if (!success) {
+      // execCommand 실패 시 Range 수동 조작
       range.deleteContents();
       range.insertNode(document.createTextNode(newText));
     }
+  } catch (e) {
+    range.deleteContents();
+    range.insertNode(document.createTextNode(newText));
   }
 }
 

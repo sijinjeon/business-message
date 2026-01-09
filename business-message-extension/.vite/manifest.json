@@ -1,27 +1,27 @@
 {
   "../../../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-RfEO7inO.js",
+    "file": "assets/crx-manifest.js-CNa2LdLU.js",
     "name": "crx-manifest.js",
     "src": "../../../../../@crx/manifest",
     "isEntry": true
   },
-  "_crypto-DogMPkOD.js": {
-    "file": "assets/crypto-DogMPkOD.js",
-    "name": "crypto"
+  "_ai-orchestrator-aGs9CcqA.js": {
+    "file": "assets/ai-orchestrator-aGs9CcqA.js",
+    "name": "ai-orchestrator"
   },
   "_global-BEE7ePxs.css": {
     "file": "assets/global-BEE7ePxs.css",
     "src": "_global-BEE7ePxs.css"
   },
-  "_index.ts-loader-CjlZLSEg.js": {
-    "file": "assets/index.ts-loader-CjlZLSEg.js",
-    "src": "_index.ts-loader-CjlZLSEg.js"
+  "_index.ts-loader-oHOfSDT8.js": {
+    "file": "assets/index.ts-loader-oHOfSDT8.js",
+    "src": "_index.ts-loader-oHOfSDT8.js"
   },
-  "_storage-DQogxH6w.js": {
-    "file": "assets/storage-DQogxH6w.js",
+  "_storage-BHZ9Hasj.js": {
+    "file": "assets/storage-BHZ9Hasj.js",
     "name": "storage",
     "imports": [
-      "_crypto-DogMPkOD.js"
+      "_ai-orchestrator-aGs9CcqA.js"
     ]
   },
   "_storage-service-FUU9XJQq.js": {
@@ -29,17 +29,17 @@
     "name": "storage-service"
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-C0slxQOq.js",
+    "file": "assets/index.ts-x68_vR6k.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true,
     "imports": [
-      "_crypto-DogMPkOD.js",
-      "_storage-DQogxH6w.js"
+      "_storage-BHZ9Hasj.js",
+      "_ai-orchestrator-aGs9CcqA.js"
     ]
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-TAVP8xz5.js",
+    "file": "assets/index.ts-vseXkJzW.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true,
@@ -48,27 +48,27 @@
     ]
   },
   "src/options/index.html": {
-    "file": "assets/index.html-ePhTienI.js",
+    "file": "assets/index.html-BxbNxen4.js",
     "name": "index.html",
     "src": "src/options/index.html",
     "isEntry": true,
     "imports": [
       "_storage-service-FUU9XJQq.js",
-      "_crypto-DogMPkOD.js"
+      "_ai-orchestrator-aGs9CcqA.js"
     ],
     "css": [
       "assets/global-BEE7ePxs.css"
     ]
   },
   "src/popup/index.html": {
-    "file": "assets/index.html-C6GA6YQn.js",
+    "file": "assets/index.html-fiRJTAAS.js",
     "name": "index.html",
     "src": "src/popup/index.html",
     "isEntry": true,
     "imports": [
       "_storage-service-FUU9XJQq.js",
-      "_crypto-DogMPkOD.js",
-      "_storage-DQogxH6w.js"
+      "_ai-orchestrator-aGs9CcqA.js",
+      "_storage-BHZ9Hasj.js"
     ],
     "css": [
       "assets/global-BEE7ePxs.css"

@@ -1,5 +1,4 @@
 // BCA Background Command Handler
-import { translateText } from '../utils/translation';
 import { getStorageData, logUsage } from '../utils/storage';
 import { AIOrchestrator } from '../services/ai/ai-orchestrator';
 import { decryptData } from '../utils/crypto';
@@ -13,9 +12,7 @@ export function setupCommandListeners() {
     console.log(`[BCA] Command received: ${command}`);
 
     try {
-      if (command === 'instant-translation') {
-        await handleInstantTranslation();
-      } else if (command === 'instant-tone-conversion') {
+      if (command === 'instant-tone-conversion') {
         await handleInstantToneConversion();
       } else if (command === '_execute_action' || command === 'tone-conversion') {
         // _execute_action은 팝업을 열지만, 배경에서도 처리가 필요한 경우
@@ -46,26 +43,15 @@ export function setupCommandListeners() {
  * 안전한 메시지 전송 유틸리티
  */
 /**
- * 컨텐츠 스크립트가 로드되었는지 확인하고, 필요시 주입 시도
+ * 컨텐츠 스크립트가 로드되었는지 확인
  */
 async function ensureContentScriptReady(tabId: number): Promise<boolean> {
   try {
     const response = await chrome.tabs.sendMessage(tabId, { action: 'PING' });
     return response?.message === 'pong';
   } catch (e) {
-    console.log(`[BCA] Content script not ready on tab ${tabId}, attempting injection...`);
-    try {
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        files: ['src/content/index.ts']
-      });
-      // 주입 후 잠시 대기
-      await new Promise(resolve => setTimeout(resolve, 100));
-      return true;
-    } catch (injectError) {
-      console.error('[BCA] Failed to inject content script:', injectError);
-      return false;
-    }
+    console.log(`[BCA] Content script not ready on tab ${tabId}`);
+    return false;
   }
 }
 
@@ -188,88 +174,6 @@ async function handleInstantToneConversion() {
       await safeSendMessage(tab.id, {
         action: 'SHOW_TOAST',
         message: error.message || '변환에 실패했습니다.',
-        type: 'error'
-      });
-    }
-  }
-}
-
-/**
- * 즉시 번역 (선택 영역) 처리
- */
-async function handleInstantTranslation() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) {
-    console.warn('[BCA] No active tab found for instant translation');
-    return;
-  }
-
-  if (tab.url?.startsWith('chrome://') || tab.url?.startsWith('edge://') || tab.url?.startsWith('about:')) {
-    return;
-  }
-
-  try {
-    const response = await safeSendMessage(tab.id, { action: 'GET_SELECTED_TEXT' });
-    
-    if (response === null) {
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'images/icon48.png',
-        title: 'BCA 알림',
-        message: '현재 페이지에서 기능을 실행할 수 없습니다. 페이지를 새로고침하거나 다른 페이지에서 시도해주세요.'
-      });
-      return;
-    }
-
-    const text = response.text;
-    if (!text || text.trim() === '') {
-      await safeSendMessage(tab.id, {
-        action: 'SHOW_TOAST',
-        message: '번역할 텍스트를 선택해주세요.',
-        type: 'info'
-      });
-      return;
-    }
-
-    const data = await getStorageData();
-    const { settings, apiKeys } = data;
-
-    const result = await translateText(
-      text,
-      settings.translation.defaultTargetLanguage,
-      settings,
-      apiKeys
-    );
-
-    if (result.success) {
-      await safeSendMessage(tab.id, {
-        action: 'REPLACE_SELECTED_TEXT',
-        text: result.translatedText,
-        append: true
-      });
-      
-      await logUsage({
-        provider: settings.selectedProvider,
-        model: settings.providerModels[settings.selectedProvider],
-        task: 'translation',
-        inputTokens: Math.ceil(text.length * 0.75),
-        outputTokens: Math.ceil(result.translatedText.length * 0.75)
-      });
-    } else {
-      await safeSendMessage(tab.id, { action: 'REMOVE_LOADING' });
-      await safeSendMessage(tab.id, {
-        action: 'SHOW_TOAST',
-        message: result.error || '번역에 실패했습니다.',
-        type: 'error'
-      });
-    }
-  } catch (error: any) {
-    console.error('[BCA] Instant Translation Error:', error);
-    if (tab?.id) {
-      await safeSendMessage(tab.id, { action: 'REMOVE_LOADING' });
-      await safeSendMessage(tab.id, {
-        action: 'SHOW_TOAST',
-        message: error.message || '번역 중 오류가 발생했습니다.',
         type: 'error'
       });
     }

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "비즈니스 커뮤니케이션 어시스턴트",
   "version": "2.3.0",
-  "description": "정중한 문장 변환 및 AI 즉시 번역 기능을 제공하는 지능형 커뮤니케이션 도구입니다.",
+  "description": "정중한 문장 변환 기능을 제공하는 지능형 커뮤니케이션 도구입니다.",
   "permissions": [
     "storage",
     "clipboardRead",
@@ -42,13 +42,6 @@
     },
     "tone-conversion": {
       "description": "클립보드 텍스트를 정중한 문장으로 변환 (팝업)"
-    },
-    "instant-translation": {
-      "suggested_key": {
-        "default": "Ctrl+I",
-        "mac": "Command+Shift+K"
-      },
-      "description": "선택한 텍스트 즉시 번역"
     },
     "instant-tone-conversion": {
       "suggested_key": {
