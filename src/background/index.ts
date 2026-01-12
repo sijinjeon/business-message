@@ -4,7 +4,10 @@ import { AIOrchestrator } from '../services/ai/ai-orchestrator';
 import { getStorageData } from '../utils/storage';
 import { decryptData } from '../utils/crypto';
 
-console.log('[BCA] Background Service Worker Initialized');
+console.log('[BCA] Background Service Worker Initialized', new Date().toISOString());
+
+// 서비스 워커 시작 시간 기록
+const SW_START_TIME = Date.now();
 
 /**
  * 서비스 워커 설치 및 업데이트 시 초기화
@@ -18,16 +21,47 @@ chrome.runtime.onInstalled.addListener((details) => {
   
   // 초기 알람 설정
   setupHeartbeat();
+  
+  // 설치/업데이트 시 단축키 상태 로깅
+  logCommandsStatus();
 });
+
+/**
+ * 등록된 단축키 상태 로깅
+ */
+async function logCommandsStatus() {
+  try {
+    const commands = await chrome.commands.getAll();
+    console.log('[BCA] Registered shortcuts:', commands.map(c => ({
+      name: c.name,
+      shortcut: c.shortcut || '(not set)',
+      description: c.description
+    })));
+    
+    // 단축키가 설정되지 않은 명령어 경고
+    const unsetCommands = commands.filter(c => !c.shortcut && c.name !== '_execute_action');
+    if (unsetCommands.length > 0) {
+      console.warn('[BCA] Commands without shortcuts:', unsetCommands.map(c => c.name));
+    }
+  } catch (e) {
+    console.error('[BCA] Failed to get commands:', e);
+  }
+}
 
 /**
  * 서비스 워커가 시작될 때마다 실행되는 초기화 로직
  */
 async function setupHeartbeat() {
-  const alarm = await chrome.alarms.get('bca-heartbeat');
-  if (!alarm) {
-    chrome.alarms.create('bca-heartbeat', { periodInMinutes: 0.5 });
-    console.log('[BCA] Heartbeat alarm created');
+  try {
+    const alarm = await chrome.alarms.get('bca-heartbeat');
+    if (!alarm) {
+      await chrome.alarms.create('bca-heartbeat', { periodInMinutes: 0.5 });
+      console.log('[BCA] Heartbeat alarm created');
+    } else {
+      console.log('[BCA] Heartbeat alarm already exists, next fire:', new Date(alarm.scheduledTime).toISOString());
+    }
+  } catch (e) {
+    console.error('[BCA] Failed to setup heartbeat:', e);
   }
 }
 
@@ -39,13 +73,19 @@ setupHeartbeat();
  */
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'bca-heartbeat') {
-    // 알람 발생 시 서비스 워커가 활성화됨
-    // console.debug('[BCA] Heartbeat');
+    // 서비스 워커 활성 시간 로깅 (디버깅용)
+    const uptime = Math.round((Date.now() - SW_START_TIME) / 1000);
+    console.debug(`[BCA] Heartbeat - SW uptime: ${uptime}s`);
   }
 });
 
-// 단축키 리스너 설정
+// 단축키 리스너 설정 - 최상위 레벨에서 즉시 실행되어야 함
+console.log('[BCA] Setting up command listeners at top level...');
 setupCommandListeners();
+console.log('[BCA] Command listeners setup completed');
+
+// 초기 상태 로깅
+logCommandsStatus();
 
 /**
  * 런타임 메시지 리스너 (Content Script나 Popup의 요청 처리)

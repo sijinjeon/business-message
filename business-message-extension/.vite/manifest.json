@@ -13,9 +13,9 @@
     "file": "assets/global-DKQbzQ57.css",
     "src": "_global-DKQbzQ57.css"
   },
-  "_index.ts-loader-bakD06gx.js": {
-    "file": "assets/index.ts-loader-bakD06gx.js",
-    "src": "_index.ts-loader-bakD06gx.js"
+  "_index.ts-loader-wx0iZvCD.js": {
+    "file": "assets/index.ts-loader-wx0iZvCD.js",
+    "src": "_index.ts-loader-wx0iZvCD.js"
   },
   "_storage-DQogxH6w.js": {
     "file": "assets/storage-DQogxH6w.js",
@@ -29,7 +29,7 @@
     "name": "storage-service"
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-C0slxQOq.js",
+    "file": "assets/index.ts-B8o3j0GR.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true,
@@ -39,7 +39,7 @@
     ]
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-BQMplD9t.js",
+    "file": "assets/index.ts-_f7Xy-29.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true,

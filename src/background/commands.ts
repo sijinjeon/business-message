@@ -6,11 +6,57 @@ import { decryptData } from '../utils/crypto';
 import { AIApiResponse } from '../types';
 
 /**
+ * 스크립트 실행이 제한된 페이지인지 확인
+ */
+function isRestrictedPage(url: string | undefined): boolean {
+  if (!url) return true;
+  
+  const restrictedPrefixes = [
+    'chrome://',
+    'chrome-extension://',
+    'edge://',
+    'about:',
+    'moz-extension://',
+    'file://',
+    'chrome.google.com/webstore',
+    'addons.mozilla.org'
+  ];
+  
+  return restrictedPrefixes.some(prefix => url.startsWith(prefix) || url.includes(prefix));
+}
+
+/**
+ * 시스템 알림 표시 (Content Script 없이도 동작)
+ */
+function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info') {
+  const iconPath = type === 'error' ? 'images/icon48.png' : 'images/icon48.png';
+  const title = type === 'error' ? 'BCA 오류' : (type === 'success' ? 'BCA 완료' : 'BCA 알림');
+  
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: iconPath,
+    title,
+    message
+  });
+}
+
+/**
  * 전역 단축키 이벤트 리스너 설정
  */
 export function setupCommandListeners() {
+  console.log('[BCA] Setting up command listeners...');
+  
+  // 등록된 모든 단축키 확인
+  chrome.commands.getAll().then((commands) => {
+    console.log('[BCA] Registered commands:', commands.map(c => ({
+      name: c.name,
+      shortcut: c.shortcut,
+      description: c.description
+    })));
+  });
+
   chrome.commands.onCommand.addListener(async (command) => {
-    console.log(`[BCA] Command received: ${command}`);
+    console.log(`[BCA] Command received: ${command}`, new Date().toISOString());
 
     try {
       if (command === 'instant-translation') {
@@ -43,27 +89,52 @@ export function setupCommandListeners() {
 }
 
 /**
- * 안전한 메시지 전송 유틸리티
- */
-/**
  * 컨텐츠 스크립트가 로드되었는지 확인하고, 필요시 주입 시도
  */
 async function ensureContentScriptReady(tabId: number): Promise<boolean> {
+  console.log(`[BCA] Checking content script readiness for tab ${tabId}...`);
+  
   try {
     const response = await chrome.tabs.sendMessage(tabId, { action: 'PING' });
+    console.log(`[BCA] PING response:`, response);
     return response?.message === 'pong';
   } catch (e) {
     console.log(`[BCA] Content script not ready on tab ${tabId}, attempting injection...`);
+    
+    // manifest.json의 content_scripts에서 파일 경로 가져오기
+    const manifest = chrome.runtime.getManifest();
+    const contentScriptFiles = manifest.content_scripts?.[0]?.js || [];
+    
+    console.log(`[BCA] Content script files to inject:`, contentScriptFiles);
+    
+    if (contentScriptFiles.length === 0) {
+      console.error('[BCA] No content script files found in manifest');
+      return false;
+    }
+    
     try {
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: ['src/content/index.ts']
+        files: contentScriptFiles
       });
       // 주입 후 잠시 대기
-      await new Promise(resolve => setTimeout(resolve, 100));
-      return true;
-    } catch (injectError) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // 주입 후 다시 PING 테스트
+      try {
+        const pingResponse = await chrome.tabs.sendMessage(tabId, { action: 'PING' });
+        console.log(`[BCA] Post-injection PING response:`, pingResponse);
+        return pingResponse?.message === 'pong';
+      } catch {
+        console.warn('[BCA] Content script injected but not responding');
+        return false;
+      }
+    } catch (injectError: any) {
       console.error('[BCA] Failed to inject content script:', injectError);
+      // 에러 메시지에 따라 더 구체적인 정보 제공
+      if (injectError.message?.includes('Cannot access')) {
+        console.warn('[BCA] Page does not allow script injection');
+      }
       return false;
     }
   }
@@ -102,20 +173,28 @@ async function safeSendMessage(tabId: number, message: any) {
  * 즉시 톤 변환 처리
  */
 async function handleInstantToneConversion() {
+  console.log('[BCA] handleInstantToneConversion started');
+  
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  console.log('[BCA] Active tab:', { id: tab?.id, url: tab?.url });
+  
   if (!tab?.id) {
     console.warn('[BCA] No active tab found for instant conversion');
+    showNotification('활성 탭을 찾을 수 없습니다.', 'error');
     return;
   }
 
   // 브라우저 내부 페이지 등 스크립트 실행이 불가능한 페이지인지 확인
-  if (tab.url?.startsWith('chrome://') || tab.url?.startsWith('edge://') || tab.url?.startsWith('about:')) {
+  if (isRestrictedPage(tab.url)) {
     console.warn('[BCA] Cannot run on internal browser pages');
+    showNotification('브라우저 내부 페이지에서는 BCA를 사용할 수 없습니다.', 'info');
     return;
   }
 
   try {
+    console.log('[BCA] Requesting selected text from content script...');
     const response = await safeSendMessage(tab.id, { action: 'GET_SELECTED_TEXT' });
+    console.log('[BCA] GET_SELECTED_TEXT response:', response);
     
     // 메시지 전송 실패 (컨텐츠 스크립트 미작동)
     if (response === null) {
@@ -198,18 +277,27 @@ async function handleInstantToneConversion() {
  * 즉시 번역 (선택 영역) 처리
  */
 async function handleInstantTranslation() {
+  console.log('[BCA] handleInstantTranslation started');
+  
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  console.log('[BCA] Active tab:', { id: tab?.id, url: tab?.url });
+  
   if (!tab?.id) {
     console.warn('[BCA] No active tab found for instant translation');
+    showNotification('활성 탭을 찾을 수 없습니다.', 'error');
     return;
   }
 
-  if (tab.url?.startsWith('chrome://') || tab.url?.startsWith('edge://') || tab.url?.startsWith('about:')) {
+  if (isRestrictedPage(tab.url)) {
+    console.warn('[BCA] Cannot run on internal browser pages');
+    showNotification('브라우저 내부 페이지에서는 BCA를 사용할 수 없습니다.', 'info');
     return;
   }
 
   try {
+    console.log('[BCA] Requesting selected text from content script...');
     const response = await safeSendMessage(tab.id, { action: 'GET_SELECTED_TEXT' });
+    console.log('[BCA] GET_SELECTED_TEXT response:', response);
     
     if (response === null) {
       chrome.notifications.create({
