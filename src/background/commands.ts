@@ -90,6 +90,7 @@ export function setupCommandListeners() {
 
 /**
  * 컨텐츠 스크립트가 로드되었는지 확인하고, 필요시 주입 시도
+ * activeTab 권한을 활용한 동적 스크립트 주입 방식
  */
 async function ensureContentScriptReady(tabId: number): Promise<boolean> {
   console.log(`[BCA] Checking content script readiness for tab ${tabId}...`);
@@ -99,24 +100,23 @@ async function ensureContentScriptReady(tabId: number): Promise<boolean> {
     console.log(`[BCA] PING response:`, response);
     return response?.message === 'pong';
   } catch (e) {
-    console.log(`[BCA] Content script not ready on tab ${tabId}, attempting injection...`);
-    
-    // manifest.json의 content_scripts에서 파일 경로 가져오기
-    const manifest = chrome.runtime.getManifest();
-    const contentScriptFiles = manifest.content_scripts?.[0]?.js || [];
-    
-    console.log(`[BCA] Content script files to inject:`, contentScriptFiles);
-    
-    if (contentScriptFiles.length === 0) {
-      console.error('[BCA] No content script files found in manifest');
-      return false;
-    }
+    console.log(`[BCA] Content script not ready on tab ${tabId}, attempting dynamic injection...`);
     
     try {
+      // CSS 먼저 주입
+      await chrome.scripting.insertCSS({
+        target: { tabId },
+        files: ['styles/global.css']
+      });
+      console.log('[BCA] CSS injected successfully');
+      
+      // Content Script 주입 (동적 주입용 파일 경로)
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: contentScriptFiles
+        files: ['scripts/content.js']
       });
+      console.log('[BCA] Content script injected successfully');
+      
       // 주입 후 잠시 대기
       await new Promise(resolve => setTimeout(resolve, 200));
       

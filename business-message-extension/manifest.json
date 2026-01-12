@@ -25,20 +25,6 @@
     "service_worker": "service-worker-loader.js",
     "type": "module"
   },
-  "content_scripts": [
-    {
-      "js": [
-        "assets/index.ts-loader-wx0iZvCD.js"
-      ],
-      "matches": [
-        "<all_urls>"
-      ],
-      "run_at": "document_idle",
-      "css": [
-        "assets/global-DKQbzQ57.css"
-      ]
-    }
-  ],
   "commands": {
     "_execute_action": {
       "suggested_key": {
@@ -77,12 +63,14 @@
   "web_accessible_resources": [
     {
       "matches": [
-        "<all_urls>"
+        "http://*/*",
+        "https://*/*"
       ],
       "resources": [
         "assets/*.js",
         "assets/*.css",
-        "assets/index.ts-_f7Xy-29.js"
+        "scripts/*.js",
+        "styles/*.css"
       ],
       "use_dynamic_url": false
     }
