@@ -1,11 +1,10 @@
 {
   "manifest_version": 3,
   "name": "비즈니스 커뮤니케이션 어시스턴트",
-  "version": "2.3.1",
+  "version": "2.5.1",
   "description": "정중한 문장 변환 및 AI 즉시 번역 기능을 제공하는 지능형 커뮤니케이션 도구입니다.",
   "permissions": [
     "storage",
-    "tabs",
     "clipboardRead",
     "clipboardWrite",
     "activeTab",
@@ -29,14 +28,14 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-loader-CjlZLSEg.js"
+        "assets/index.ts-loader-CcHVtkwJ.js"
       ],
       "matches": [
         "<all_urls>"
       ],
       "run_at": "document_idle",
       "css": [
-        "assets/global-BEE7ePxs.css"
+        "assets/global-D5zhqsDE.css"
       ]
     }
   ],
@@ -83,7 +82,7 @@
       "resources": [
         "assets/*.js",
         "assets/*.css",
-        "assets/index.ts-TAVP8xz5.js"
+        "assets/index.ts-nPU9B4Lf.js"
       ],
       "use_dynamic_url": false
     }

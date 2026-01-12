@@ -20,6 +20,7 @@ export interface ResultCardProps {
   tone: ToneType;
   text?: string;
   onCopy: (text: string) => Promise<void> | void;
+  onCopyError?: (message: string) => void;
   isDefaultSelected?: boolean;
   onConvert?: (tone: ToneType) => void;
   isLoading?: boolean;

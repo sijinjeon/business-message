@@ -94,6 +94,10 @@ export function replaceSelectedText(newText: string, append: boolean = false) {
     const container = document.createElement('div');
     container.className = 'bca-translation-block';
     // 인라인 스타일로 기본 디자인 적용 (global.css 영향 최소화 및 확실한 구분)
+    container.style.display = 'inline-block';
+    container.style.maxWidth = '100%';
+    container.style.verticalAlign = 'top';
+    container.style.boxSizing = 'border-box';
     container.style.color = '#2563eb'; // blue-600
     container.style.fontSize = '0.95em';
     container.style.marginTop = '8px';
@@ -104,7 +108,6 @@ export function replaceSelectedText(newText: string, append: boolean = false) {
     container.style.whiteSpace = 'pre-wrap';
     container.style.borderRadius = '4px';
     container.style.lineHeight = '1.6';
-    container.style.display = 'block';
     container.style.fontFamily = 'sans-serif';
     container.style.textAlign = 'left';
     

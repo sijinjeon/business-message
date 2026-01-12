@@ -14,6 +14,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
   tone,
   text,
   onCopy,
+  onCopyError,
   isDefaultSelected = false,
   onConvert,
   isLoading = false
@@ -29,6 +30,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
       setTimeout(() => setIsCopied(false), 2000)
     } catch (error) {
       console.error('Copy failed:', error)
+      onCopyError?.('클립보드 복사에 실패했습니다.')
     }
   }
 

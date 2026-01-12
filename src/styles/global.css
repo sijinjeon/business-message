@@ -1,10 +1,15 @@
 /* @tailwind base; 제거 - 호스트 페이지(Gmail 등)의 스타일 오염 방지 */
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
-@tailwind components;
-@tailwind utilities;
+
+/* Scope Tailwind CSS to BCA extension only using CSS layers */
+@layer bca-extension {
+  @tailwind components;
+  @tailwind utilities;
+}
 
 /* CSS Variables - shadcn/ui 호환 (Zinc theme) */
-:root, .bca-ui-root {
+@layer bca-extension {
+  :root, .bca-ui-root {
   --background: 0 0% 100%;
   --foreground: 240 10% 3.9%;
   --card: 0 0% 100%;
@@ -70,8 +75,9 @@
 .bca-ui-root .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground)/0.5);
 }
+}
 
-
+/* Content script styles - MUST stay outside layer for host page compatibility */
 /* 로딩 스피너 애니메이션 */
 @keyframes bca-spin {
   from { transform: rotate(0deg); }

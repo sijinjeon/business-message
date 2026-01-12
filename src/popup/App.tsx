@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { AlertCircle, Sparkles, Command, ShieldCheck, Languages, MessageSquare, Loader2, Settings } from 'lucide-react'
+import { AlertCircle, Sparkles, Command, ShieldCheck, Languages, Loader2, Settings, X, Clipboard, Play, ArrowRight } from 'lucide-react'
 import { Select, SelectItem } from '@/components/ui/select'
 import TextInput from './components/TextInput'
 import ResultCard from './components/ResultCard'
@@ -20,6 +20,7 @@ function App() {
   const [translationResult, setTranslationResult] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'tone' | 'translation'>('tone')
   const [targetLanguage, setTargetLanguage] = useState<TargetLanguage>('ko')
+  const [sourceLanguage, setSourceLanguage] = useState<'auto' | TargetLanguage>('auto')
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error' | ''>('')
 
@@ -32,13 +33,11 @@ function App() {
 
   useEffect(() => {
     const handleAutoProcess = async () => {
-      // 설정이 로드될 때까지 대기
       if (isSettingsLoading || !settings) return;
 
       const data = await chrome.storage.local.get(['lastCommand', 'commandTimestamp']);
       const now = Date.now();
       
-      // 5초 이내의 명령어만 유효한 것으로 처리
       if (data.lastCommand && data.commandTimestamp && (now - data.commandTimestamp < 5000)) {
         console.log(`[BCA] Auto-processing command: ${data.lastCommand}`);
         const text = await readClipboard();
@@ -57,7 +56,6 @@ function App() {
         }
         await chrome.storage.local.remove(['lastCommand', 'commandTimestamp']);
       } else {
-        // 자동 실행 조건이 아닐 때만 클립보드 내용을 입력창에 채움 (이미 입력된 내용이 없을 때)
         if (!inputText) {
           const text = await readClipboard();
           if (text) setInputText(text);
@@ -152,8 +150,20 @@ function App() {
   }
 
   const showStatusMessage = (msg: string, type: 'success' | 'error') => {
-    setMessage(msg); setMessageType(type)
-    setTimeout(() => { setMessage(''); setMessageType('') }, 2000)
+    setMessage(msg);
+    setMessageType(type)
+
+    if (type === 'success') {
+      setTimeout(() => {
+        setMessage('');
+        setMessageType('')
+      }, 2000)
+    }
+  }
+
+  const dismissMessage = () => {
+    setMessage('');
+    setMessageType('');
   }
 
   const handleOpenSettings = () => {
@@ -164,49 +174,143 @@ function App() {
     }
   }
 
+  const handlePasteFromClipboard = async () => {
+    const text = await readClipboard()
+    if (text) setInputText(text)
+  }
+
   if (isSettingsLoading) return <div className="w-[800px] h-[600px] flex items-center justify-center"><Loader2 className="animate-spin text-zinc-400" /></div>
 
   return (
     <div className="w-[800px] h-[600px] bg-white relative flex flex-col overflow-hidden selection:bg-zinc-900/10">
-      <header className="px-6 py-4 flex items-center justify-between border-b border-zinc-100 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center">
-            <Command className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h1 className="text-[14px] font-bold tracking-tight text-zinc-900 leading-none">BCA Assistant</h1>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {message && (
-            <div className={`px-3 py-1.5 rounded-full text-[12px] font-bold animate-in fade-in slide-in-from-right-2 border flex items-center gap-2 ${
-              messageType === 'success' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'
-            }`}>
-              {messageType === 'success' ? <Sparkles className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-              {message}
+      {/* Compact Header */}
+      <header className="shrink-0 border-b border-zinc-100">
+        <div className="px-5 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-zinc-900 flex items-center justify-center">
+              <Command className="w-3.5 h-3.5 text-white" />
             </div>
-          )}
-          <button 
-            onClick={handleOpenSettings}
-            className="p-2 rounded-lg hover:bg-zinc-100 transition-colors text-zinc-400 hover:text-zinc-600"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+            <h1 className="text-[13px] font-bold tracking-tight text-zinc-900">BCA Assistant</h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {message && (
+              <div className={`px-2.5 py-1 rounded-full text-[11px] font-bold animate-in fade-in slide-in-from-right-2 border flex items-center gap-1.5 max-w-[250px] ${
+                messageType === 'success' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'
+              }`}>
+                {messageType === 'success' ? <Sparkles className="w-2.5 h-2.5 shrink-0" /> : <AlertCircle className="w-2.5 h-2.5 shrink-0" />}
+                <span className="truncate">{message}</span>
+                {messageType === 'error' && (
+                  <button onClick={dismissMessage} className="ml-0.5 hover:opacity-70 shrink-0">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                )}
+              </div>
+            )}
+            <button 
+              onClick={handleOpenSettings}
+              className="p-1.5 rounded-lg hover:bg-zinc-100 transition-colors text-zinc-400 hover:text-zinc-600"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden">
-        {/* Left Column: Input */}
-        <section className="w-[340px] border-r border-zinc-100 flex flex-col p-5 space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-              <MessageSquare className="w-3 h-3" />
-              메시지 입력
-            </h2>
+      {/* Control Bar - All controls in one row */}
+      <div className="shrink-0 px-5 py-3 border-b border-zinc-100 bg-zinc-50/50">
+        <div className="flex items-center gap-3">
+          {/* Tab Buttons */}
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => { setActiveTab('tone'); updateLastUsedTab('tone'); }}
+              disabled={loadingState === 'loading'}
+              className={`px-4 py-2 rounded-lg text-[12px] font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'tone'
+                  ? 'bg-zinc-900 text-white shadow-sm'
+                  : 'bg-white text-zinc-600 border border-zinc-200 hover:border-zinc-300'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              톤 변환
+            </button>
+            <button
+              onClick={() => { setActiveTab('translation'); updateLastUsedTab('translation'); }}
+              disabled={loadingState === 'loading'}
+              className={`px-4 py-2 rounded-lg text-[12px] font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'translation'
+                  ? 'bg-zinc-900 text-white shadow-sm'
+                  : 'bg-white text-zinc-600 border border-zinc-200 hover:border-zinc-300'
+              }`}
+            >
+              <Languages className="w-3.5 h-3.5" />
+              번역
+            </button>
           </div>
-          
-          <div className="flex-1 flex flex-col min-h-0">
+
+          <div className="w-px h-6 bg-zinc-200" />
+
+          {/* Translation Options - Only show when translation tab is active */}
+          {activeTab === 'translation' && (
+            <>
+              <div className="flex items-center gap-2">
+                <Select value={sourceLanguage} onValueChange={(v) => setSourceLanguage(v as 'auto' | TargetLanguage)}>
+                  <SelectItem value="auto">자동</SelectItem>
+                  <SelectItem value="ko">한국어</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="ja">日本語</SelectItem>
+                  <SelectItem value="zh-CN">中文</SelectItem>
+                </Select>
+                <ArrowRight className="w-3.5 h-3.5 text-zinc-400" />
+                <Select value={targetLanguage} onValueChange={(v) => setTargetLanguage(v as TargetLanguage)}>
+                  <SelectItem value="ko">한국어</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="ja">日本語</SelectItem>
+                  <SelectItem value="zh-CN">中文</SelectItem>
+                </Select>
+              </div>
+              <div className="w-px h-6 bg-zinc-200" />
+            </>
+          )}
+
+          {/* Clipboard Button */}
+          <button
+            onClick={handlePasteFromClipboard}
+            className="px-3 py-2 rounded-lg bg-white border border-zinc-200 text-[12px] font-bold text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300 transition-all flex items-center gap-1.5"
+          >
+            <Clipboard className="w-3.5 h-3.5" />
+            붙여넣기
+          </button>
+
+          {/* Execute Button */}
+          <button
+            onClick={() => handleProcess(inputText, activeTab)}
+            disabled={loadingState === 'loading'}
+            className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-[12px] font-bold hover:bg-zinc-800 transition-all flex items-center gap-1.5 ml-auto disabled:opacity-50"
+          >
+            {loadingState === 'loading' ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                처리 중...
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5" />
+                {activeTab === 'tone' ? '변환 실행' : '번역 실행'}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content - Input and Result with equal width */}
+      <main className="flex-1 flex overflow-hidden">
+        {/* Left: Input */}
+        <section className="flex-1 flex flex-col border-r border-zinc-100">
+          <div className="px-4 py-2.5 border-b border-zinc-50 bg-white">
+            <h2 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">입력</h2>
+          </div>
+          <div className="flex-1 p-4">
             <TextInput 
               value={inputText} 
               onChange={setInputText} 
@@ -214,149 +318,89 @@ function App() {
               placeholder="다듬거나 번역할 메시지를 입력하세요..." 
             />
           </div>
-
-          <div className="space-y-2">
-            <button
-              onClick={async () => {
-                const text = await readClipboard()
-                if (text) setInputText(text)
-              }}
-              className="w-full py-2.5 rounded-xl border border-zinc-200 text-[13px] font-bold text-zinc-600 hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              클립보드 붙여넣기
-            </button>
-            
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => { setActiveTab('tone'); handleProcess(inputText, 'tone'); }}
-                disabled={loadingState === 'loading'}
-                className={`py-3 rounded-xl text-[13px] font-bold transition-all flex flex-col items-center gap-1 border ${
-                  activeTab === 'tone' 
-                    ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm' 
-                    : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300'
-                }`}
-              >
-                <Sparkles className="w-4 h-4" />
-                톤 변환
-              </button>
-              <button
-                onClick={() => { setActiveTab('translation'); handleProcess(inputText, 'translation'); }}
-                disabled={loadingState === 'loading'}
-                className={`py-3 rounded-xl text-[13px] font-bold transition-all flex flex-col items-center gap-1 border ${
-                  activeTab === 'translation' 
-                    ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm' 
-                    : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300'
-                }`}
-              >
-                <Languages className="w-4 h-4" />
-                전문 번역
-              </button>
-            </div>
-            
-            {activeTab === 'translation' && (
-              <div className="pt-2">
-                <Select value={targetLanguage} onValueChange={(v) => setTargetLanguage(v as TargetLanguage)}>
-                  <SelectItem value="ko">한국어로 번역</SelectItem>
-                  <SelectItem value="en">영어로 번역</SelectItem>
-                  <SelectItem value="ja">일본어로 번역</SelectItem>
-                  <SelectItem value="zh-CN">중국어로 번역</SelectItem>
-                </Select>
-              </div>
-            )}
-          </div>
         </section>
 
-        {/* Right Column: Result */}
-        <section className="flex-1 bg-zinc-50/30 flex flex-col overflow-hidden">
-          <div className="p-5 flex items-center justify-between border-b border-zinc-100 bg-white/50 backdrop-blur-sm">
-            <h2 className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
+        {/* Right: Result */}
+        <section className="flex-1 flex flex-col bg-zinc-50/30">
+          <div className="px-4 py-2.5 border-b border-zinc-100 bg-white/50">
+            <h2 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
               {activeTab === 'tone' ? '톤 변환 결과' : '번역 결과'}
             </h2>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
             {aiError && (
-              <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-700 mb-4 flex items-start gap-3">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <p className="text-[14px] font-medium">{aiError}</p>
+              <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-700 mb-3 flex items-start gap-2">
+                <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <p className="text-[13px] font-medium">{aiError}</p>
               </div>
             )}
 
-            <div className="h-full">
-              {loadingState === 'loading' ? (
-                <div className="h-full flex flex-col items-center justify-center py-20 animate-in fade-in duration-500">
-                  <div className="bca-gradient-spinner mb-4" />
-                  <p className="text-[13px] font-bold text-zinc-400 animate-pulse">AI가 응답을 생성하고 있습니다...</p>
-                </div>
-              ) : (
-                <>
-                  {activeTab === 'tone' && results && (
-                    <div className="space-y-3">
-                      <ResultCard 
-                        tone="formal" 
-                        text={results.formal} 
-                        onCopy={writeClipboard} 
-                        isDefaultSelected={settings?.autoCopyTone === 'formal'} 
-                        onConvert={handleSingleToneConversion}
-                        isLoading={convertingTones['formal']}
-                      />
-                      <ResultCard 
-                        tone="general" 
-                        text={results.general} 
-                        onCopy={writeClipboard} 
-                        isDefaultSelected={settings?.autoCopyTone === 'general'} 
-                        onConvert={handleSingleToneConversion}
-                        isLoading={convertingTones['general']}
-                      />
-                      <ResultCard 
-                        tone="friendly" 
-                        text={results.friendly} 
-                        onCopy={writeClipboard} 
-                        isDefaultSelected={settings?.autoCopyTone === 'friendly'} 
-                        onConvert={handleSingleToneConversion}
-                        isLoading={convertingTones['friendly']}
-                      />
-                    </div>
-                  )}
+            {loadingState === 'loading' ? (
+              <div className="h-full flex flex-col items-center justify-center animate-in fade-in duration-500">
+                <div className="bca-gradient-spinner mb-3" />
+                <p className="text-[12px] font-bold text-zinc-400 animate-pulse">AI가 응답을 생성하고 있습니다...</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === 'tone' && results && (
+                  <div className="space-y-2.5">
+                    <ResultCard
+                      tone="formal"
+                      text={results.formal}
+                      onCopy={writeClipboard}
+                      onCopyError={(msg) => showStatusMessage(msg, 'error')}
+                      isDefaultSelected={settings?.autoCopyTone === 'formal'}
+                      onConvert={handleSingleToneConversion}
+                      isLoading={convertingTones['formal']}
+                    />
+                    <ResultCard
+                      tone="general"
+                      text={results.general}
+                      onCopy={writeClipboard}
+                      onCopyError={(msg) => showStatusMessage(msg, 'error')}
+                      isDefaultSelected={settings?.autoCopyTone === 'general'}
+                      onConvert={handleSingleToneConversion}
+                      isLoading={convertingTones['general']}
+                    />
+                    <ResultCard
+                      tone="friendly"
+                      text={results.friendly}
+                      onCopy={writeClipboard}
+                      onCopyError={(msg) => showStatusMessage(msg, 'error')}
+                      isDefaultSelected={settings?.autoCopyTone === 'friendly'}
+                      onConvert={handleSingleToneConversion}
+                      isLoading={convertingTones['friendly']}
+                    />
+                  </div>
+                )}
 
-                  {activeTab === 'translation' && translationResult && (
-                    <div className="p-6 rounded-2xl border border-zinc-100 bg-white space-y-4 shadow-sm">
-                      <p className="font-sans text-[15px] leading-relaxed text-zinc-900 whitespace-pre-wrap">{translationResult}</p>
-                      <div className="flex justify-end border-t border-zinc-50 pt-4">
-                        <button 
-                          onClick={() => { writeClipboard(translationResult!); showStatusMessage('✨ 복사 완료', 'success') }} 
-                          className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-[12px] font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2"
-                        >
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          클립보드에 복사
-                        </button>
-                      </div>
+                {activeTab === 'translation' && translationResult && (
+                  <div className="p-4 rounded-xl border border-zinc-100 bg-white space-y-3 shadow-sm">
+                    <p className="font-sans text-[14px] leading-relaxed text-zinc-900 whitespace-pre-wrap">{translationResult}</p>
+                    <div className="flex justify-end border-t border-zinc-50 pt-3">
+                      <button 
+                        onClick={() => { writeClipboard(translationResult!); showStatusMessage('✨ 복사 완료', 'success') }} 
+                        className="px-3 py-1.5 bg-zinc-900 text-white rounded-lg text-[11px] font-bold hover:bg-zinc-800 transition-colors flex items-center gap-1.5"
+                      >
+                        <ShieldCheck className="w-3 h-3" />
+                        복사
+                      </button>
                     </div>
-                  )}
-                </>
-              )}
+                  </div>
+                )}
 
-              {loadingState === 'idle' && !results && !translationResult && (
-                <div className="h-full flex flex-col items-center justify-center text-zinc-300 py-20">
-                  <Sparkles className="w-10 h-10 mb-4 opacity-10" />
-                  <p className="text-[13px] font-medium">변환 또는 번역을 선택해주세요.</p>
-                </div>
-              )}
-            </div>
+                {loadingState === 'idle' && !results && !translationResult && (
+                  <div className="h-full flex flex-col items-center justify-center text-zinc-300">
+                    <Sparkles className="w-8 h-8 mb-3 opacity-10" />
+                    <p className="text-[12px] font-medium">메시지를 입력하고 실행하세요</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </section>
       </main>
-
-      <footer className="px-6 py-3 border-t border-zinc-50 flex items-center justify-between text-[10px] text-zinc-400 font-bold uppercase tracking-widest shrink-0 bg-white">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-3 h-3" />
-          Secured by {settings?.selectedProvider.toUpperCase() || 'AI'}
-        </div>
-        <div className="flex items-center gap-4">
-          <span>v2.5.1</span>
-        </div>
-      </footer>
     </div>
   )
 }
