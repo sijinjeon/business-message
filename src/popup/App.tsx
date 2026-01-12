@@ -21,11 +21,11 @@ const LANGUAGE_OPTIONS: { key: TargetLanguage; label: string; emoji: string }[] 
   { key: 'zh-CN', label: '中文', emoji: '🇨🇳' }
 ]
 
-// 인라인 스타일 정의
+// Design System Styles - bca_popup_v2.html 기반
 const styles = {
-  container: {
+  popupContainer: {
     width: '480px',
-    height: '700px',
+    height: '600px',
     display: 'flex',
     flexDirection: 'column' as const,
     background: '#ffffff',
@@ -35,23 +35,20 @@ const styles = {
     overflow: 'hidden',
     fontFamily: "'Inter', 'Noto Sans KR', sans-serif",
   },
-  header: {
+  dragHeader: {
+    cursor: 'grab',
+    background: 'linear-gradient(to right, #ffffff, #f8fafc)',
+    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '12px 16px',
     borderBottom: '1px solid #f1f5f9',
-    background: 'linear-gradient(to right, #ffffff, #f8fafc)',
-    flexShrink: 0,
   },
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-  },
-  gripIcon: {
-    color: '#cbd5e1',
-    marginRight: '4px',
   },
   logoBox: {
     background: '#2563eb',
@@ -66,9 +63,7 @@ const styles = {
     fontSize: '14px',
     fontWeight: 700,
     color: '#1e293b',
-  },
-  titleAccent: {
-    color: '#2563eb',
+    margin: 0,
   },
   headerRight: {
     display: 'flex',
@@ -84,14 +79,18 @@ const styles = {
     cursor: 'pointer',
     transition: 'all 0.2s',
     fontSize: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  main: {
+  scrollableMain: {
     flex: 1,
+    overflowY: 'auto' as const,
     padding: '16px',
+    scrollbarGutter: 'stable' as const,
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '20px',
-    overflow: 'hidden',
+    gap: '24px',
   },
   nav: {
     display: 'flex',
@@ -111,21 +110,14 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '6px',
+    color: '#94a3b8',
   },
   modeTabActive: {
     color: '#2563eb',
-    borderBottom: '2px solid #2563eb',
-  },
-  modeTabInactive: {
-    color: '#94a3b8',
+    borderBottomColor: '#2563eb',
   },
   optionsPanel: {
     minHeight: '40px',
-  },
-  toneOptions: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: '8px',
   },
   optionChip: {
     display: 'flex',
@@ -162,40 +154,31 @@ const styles = {
   labelTextBlue: {
     color: '#2563eb',
   },
-  labelRight: {
-    fontSize: '10px',
-    color: '#94a3b8',
-    fontWeight: 500,
-  },
-  textarea: {
+  inputBoxShared: {
     width: '100%',
-    flex: 1,
-    minHeight: '160px',
+    minHeight: '140px',
     padding: '16px',
     fontSize: '14px',
     lineHeight: 1.6,
     borderRadius: '12px',
     border: '1px solid #e2e8f0',
     outline: 'none',
+    transition: 'all 0.2s ease',
     resize: 'none' as const,
     fontFamily: "'Inter', 'Noto Sans KR', sans-serif",
-    transition: 'all 0.2s',
     boxSizing: 'border-box' as const,
   },
-  textareaSource: {
+  inputSource: {
     background: '#f8fafc',
     color: '#334155',
   },
-  textareaResult: {
+  inputResult: {
     background: 'rgba(239, 246, 255, 0.4)',
     color: '#1e293b',
     borderColor: '#dbeafe',
   },
   resultWrapper: {
     position: 'relative' as const,
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column' as const,
   },
   copyOverlay: {
     position: 'absolute' as const,
@@ -203,8 +186,6 @@ const styles = {
     right: '8px',
     display: 'flex',
     gap: '4px',
-    opacity: 0,
-    transition: 'opacity 0.2s',
   },
   copyButton: {
     background: '#ffffff',
@@ -228,13 +209,6 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  shortcutHint: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    fontSize: '10px',
-    color: '#94a3b8',
-  },
   kbd: {
     padding: '2px 6px',
     borderRadius: '4px',
@@ -243,10 +217,6 @@ const styles = {
     boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
     fontSize: '10px',
     fontFamily: 'monospace',
-  },
-  footerButtons: {
-    display: 'flex',
-    gap: '8px',
   },
   cancelButton: {
     padding: '8px 16px',
@@ -274,7 +244,7 @@ const styles = {
     alignItems: 'center',
     gap: '8px',
   },
-  message: {
+  statusMessage: {
     padding: '6px 10px',
     borderRadius: '9999px',
     fontSize: '10px',
@@ -284,12 +254,12 @@ const styles = {
     gap: '6px',
     maxWidth: '180px',
   },
-  messageSuccess: {
+  statusSuccess: {
     background: '#f0fdf4',
     color: '#15803d',
     border: '1px solid #bbf7d0',
   },
-  messageError: {
+  statusError: {
     background: '#fef2f2',
     color: '#dc2626',
     border: '1px solid #fecaca',
@@ -299,7 +269,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     width: '480px',
-    height: '700px',
+    height: '600px',
     background: '#ffffff',
   },
   spinner: {
@@ -309,12 +279,6 @@ const styles = {
     borderTopColor: '#3b82f6',
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
-  },
-  section: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    minHeight: 0,
   },
 }
 
@@ -499,33 +463,29 @@ function App() {
     return (
       <div style={styles.loading}>
         <div style={styles.spinner} />
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
 
   return (
-    <div style={styles.container}>
+    <div style={styles.popupContainer}>
       {/* Header */}
-      <header style={styles.header}>
+      <header style={styles.dragHeader}>
         <div style={styles.headerLeft}>
-          <svg style={styles.gripIcon} width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="9" cy="5" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="9" cy="19" r="2"/>
-            <circle cx="15" cy="5" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="15" cy="19" r="2"/>
-          </svg>
+          <i className="fa-solid fa-grip-vertical" style={{ color: '#cbd5e1', marginRight: '4px' }}></i>
           <div style={styles.logoBox}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
-              <path d="M15 4V2M15 16v-2M8 9h2m10 0h2M17.8 11.8L19 13M17.8 6.2L19 5M3 21l9-9m0 0l-4.5-4.5M12 12l4.5 4.5"/>
-            </svg>
+            <i className="fa-solid fa-wand-magic-sparkles" style={{ color: 'white', fontSize: '12px' }}></i>
           </div>
           <h1 style={styles.title}>
-            Nexus AI <span style={styles.titleAccent}>BCA</span>
+            Nexus AI <span style={{ color: '#2563eb' }}>BCA</span>
           </h1>
         </div>
         <div style={styles.headerRight}>
           {message && (
             <div style={{
-              ...styles.message,
-              ...(messageType === 'success' ? styles.messageSuccess : styles.messageError)
+              ...styles.statusMessage,
+              ...(messageType === 'success' ? styles.statusSuccess : styles.statusError)
             }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{message}</span>
               {messageType === 'error' && (
@@ -544,9 +504,7 @@ function App() {
             onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#475569' }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8' }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
-            </svg>
+            <i className="fa-solid fa-gear"></i>
           </button>
           <button 
             style={styles.iconButton}
@@ -554,90 +512,73 @@ function App() {
             onMouseEnter={(e) => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ef4444' }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8' }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
+            <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main style={styles.main}>
+      {/* Main Content - Scrollable */}
+      <main style={styles.scrollableMain} className="custom-scrollbar">
         {/* Mode Tabs & Options */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexShrink: 0 }}>
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <nav style={styles.nav}>
             <button
+              id="btn-tone"
               onClick={() => handleTabChange('tone')}
               disabled={loadingState === 'loading'}
               style={{
                 ...styles.modeTab,
-                ...(activeTab === 'tone' ? styles.modeTabActive : styles.modeTabInactive)
+                ...(activeTab === 'tone' ? styles.modeTabActive : {})
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.7 }}>
-                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-              </svg>
+              <i className="fa-solid fa-bullhorn" style={{ opacity: 0.7 }}></i>
               톤 변환
             </button>
             <button
+              id="btn-translate"
               onClick={() => handleTabChange('translation')}
               disabled={loadingState === 'loading'}
               style={{
                 ...styles.modeTab,
-                ...(activeTab === 'translation' ? styles.modeTabActive : styles.modeTabInactive)
+                ...(activeTab === 'translation' ? styles.modeTabActive : {})
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.7 }}>
-                <path d="M5 8l6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>
-              </svg>
+              <i className="fa-solid fa-language" style={{ opacity: 0.7 }}></i>
               AI 번역
             </button>
           </nav>
 
-          {/* Options Panel - option-chip 스타일 사용 */}
-          <div style={styles.optionsPanel}>
-            {activeTab === 'tone' ? (
-              <div style={styles.toneOptions}>
-                {TONE_OPTIONS.map((tone) => (
-                  <button
-                    key={tone.key}
-                    onClick={() => setSelectedTone(tone.key)}
-                    style={{
-                      ...styles.optionChip,
-                      ...(selectedTone === tone.key ? styles.optionChipActive : {})
-                    }}
-                  >
-                    <span style={{ fontSize: '14px' }}>{tone.emoji}</span>
-                    {tone.label}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div style={styles.toneOptions}>
-                {LANGUAGE_OPTIONS.map((lang) => (
-                  <button
-                    key={lang.key}
-                    onClick={() => setTargetLanguage(lang.key)}
-                    style={{
-                      ...styles.optionChip,
-                      ...(targetLanguage === lang.key ? styles.optionChipActive : {})
-                    }}
-                  >
-                    <span style={{ fontSize: '14px' }}>{lang.emoji}</span>
-                    {lang.label}
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Options Panel */}
+          <div id="options-panel" style={styles.optionsPanel}>
+            <div id="tone-options" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {(activeTab === 'tone' ? TONE_OPTIONS : LANGUAGE_OPTIONS).map((option) => (
+                <button
+                  key={option.key}
+                  onClick={() => activeTab === 'tone' 
+                    ? setSelectedTone(option.key as ToneType) 
+                    : setTargetLanguage(option.key as TargetLanguage)
+                  }
+                  style={{
+                    ...styles.optionChip,
+                    ...((activeTab === 'tone' ? selectedTone === option.key : targetLanguage === option.key) 
+                      ? styles.optionChipActive 
+                      : {})
+                  }}
+                >
+                  <span style={{ fontSize: '14px' }}>{option.emoji}</span>
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Source Input */}
-        <section style={styles.section}>
+        <section>
           <div style={styles.sectionLabel}>
             <span style={styles.labelText}>Original Text</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={styles.labelRight}>{detectedLanguage} 감지됨</span>
+              <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 500 }}>{detectedLanguage} 감지됨</span>
               <button
                 onClick={handlePasteFromClipboard}
                 style={{ 
@@ -652,9 +593,7 @@ function App() {
                   gap: '4px'
                 }}
               >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                </svg>
+                <i className="fa-regular fa-clipboard" style={{ fontSize: '10px' }}></i>
                 붙여넣기
               </button>
             </div>
@@ -666,7 +605,7 @@ function App() {
               setInputText(e.target.value)
               detectLanguage(e.target.value)
             }}
-            style={{ ...styles.textarea, ...styles.textareaSource }}
+            style={{ ...styles.inputBoxShared, ...styles.inputSource }}
             placeholder="변환하고 싶은 문장을 입력하세요..."
             onFocus={(e) => {
               e.currentTarget.style.borderColor = '#3b82f6'
@@ -680,7 +619,7 @@ function App() {
         </section>
 
         {/* AI Result */}
-        <section style={styles.section}>
+        <section>
           <div style={styles.sectionLabel}>
             <span style={{ ...styles.labelText, ...styles.labelTextBlue }}>AI Result</span>
             {aiError && (
@@ -697,14 +636,14 @@ function App() {
               value={loadingState === 'loading' ? 'AI가 응답을 생성하고 있습니다...' : (currentResult || '')}
               readOnly
               style={{ 
-                ...styles.textarea, 
-                ...styles.textareaResult,
+                ...styles.inputBoxShared, 
+                ...styles.inputResult,
                 ...(loadingState === 'loading' ? { color: '#94a3b8' } : {})
               }}
               placeholder="AI 변환 결과가 여기에 표시됩니다..."
             />
             {currentResult && loadingState !== 'loading' && (
-              <div style={{ ...styles.copyOverlay, opacity: isHoveringResult ? 1 : 0 }}>
+              <div style={{ ...styles.copyOverlay, opacity: isHoveringResult ? 1 : 0, transition: 'opacity 0.2s' }}>
                 <button
                   onClick={handleCopyResult}
                   style={styles.copyButton}
@@ -712,30 +651,29 @@ function App() {
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#e2e8f0' }}
                 >
                   {isCopied ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
+                    <i className="fa-solid fa-check" style={{ color: '#22c55e' }}></i>
                   ) : (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                    </svg>
+                    <i className="fa-regular fa-copy"></i>
                   )}
                 </button>
               </div>
             )}
           </div>
         </section>
+        
+        {/* Spacer */}
+        <div style={{ height: '8px' }}></div>
       </main>
 
-      {/* Footer */}
+      {/* Footer - Fixed */}
       <footer style={styles.footer}>
-        <div style={styles.shortcutHint}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#94a3b8' }}>
           <kbd style={styles.kbd}>Alt</kbd>
           <span>+</span>
           <kbd style={styles.kbd}>C</kbd>
         </div>
-        <div style={styles.footerButtons}>
-          <button 
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
             onClick={() => window.close()}
             style={styles.cancelButton}
             onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0' }}
@@ -768,16 +706,12 @@ function App() {
               </>
             ) : currentResult ? (
               <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                </svg>
+                <i className="fa-solid fa-copy"></i>
                 결과 복사하기
               </>
             ) : (
               <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                </svg>
+                <i className="fa-solid fa-bolt"></i>
                 {activeTab === 'tone' ? '변환 실행' : '번역 실행'}
               </>
             )}
@@ -790,6 +724,16 @@ function App() {
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e2e8f0;
+          border-radius: 10px;
         }
       `}</style>
     </div>

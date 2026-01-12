@@ -1,5 +1,6 @@
 /* @tailwind base; 제거 - 호스트 페이지(Gmail 등)의 스타일 오염 방지 */
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
 
 /* Scope Tailwind CSS to BCA extension only using CSS layers */
 @layer bca-extension {
@@ -7,28 +8,39 @@
   @tailwind utilities;
 }
 
-/* CSS Variables - shadcn/ui 호환 (Zinc theme) */
+/* CSS Variables - BCA Design System (Blue/Slate theme) */
 @layer bca-extension {
   :root, .bca-ui-root {
+  /* Primary (Blue) */
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Background & Surface */
   --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
+  --foreground: 215.4 16.3% 46.9%;
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 222.2 47.4% 11.2%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 240 5.9% 10%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+  
+  /* Secondary (Slate) */
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  
+  /* Semantic */
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 5.9% 10%;
+  --success: 142.1 76.2% 36.3%;
+  --success-foreground: 0 0% 100%;
+  
+  /* Borders & Inputs */
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 217.2 91.2% 59.8%;
   --radius: 0.75rem;
 }
 
@@ -60,7 +72,7 @@
 
 /* 커스텀 스크롤바 */
 .bca-ui-root .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .bca-ui-root .custom-scrollbar::-webkit-scrollbar-track {
@@ -68,12 +80,273 @@
 }
 
 .bca-ui-root .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
+  background: #e2e8f0;
   border-radius: 10px;
 }
 
 .bca-ui-root .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground)/0.5);
+  background: #cbd5e1;
+}
+
+/* BCA Design System - Shared Components */
+
+/* Input Box Shared Style */
+.bca-ui-root .input-box-shared {
+  width: 100%;
+  min-height: 140px;
+  padding: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  outline: none;
+  transition: all 0.2s ease;
+  resize: none;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
+}
+
+.bca-ui-root .input-box-shared:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Mode Tab Style */
+.bca-ui-root .mode-tab {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bca-ui-root .mode-tab:hover {
+  color: #64748b;
+}
+
+.bca-ui-root .mode-tab.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+/* Option Chip Style */
+.bca-ui-root .option-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bca-ui-root .option-chip:hover {
+  background: #f8fafc;
+}
+
+.bca-ui-root .option-chip.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+/* Primary Button Style */
+.bca-ui-root .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: #2563eb;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+  transition: all 0.2s ease;
+}
+
+.bca-ui-root .btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.bca-ui-root .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Card Style for Options Page - Design Guide v2 Spec */
+.bca-ui-root .settings-card,
+.bca-ui-root .setting-card {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 1rem; /* rounded-2xl = 16px */
+  padding: 2rem; /* p-8 = 32px */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+  transition: all 0.2s ease;
+}
+
+/* Sidebar Item Style */
+.bca-ui-root .sidebar-item.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border-right: 3px solid #2563eb;
+}
+
+/* Popup Container Style */
+.bca-ui-root .popup-container {
+  width: 480px;
+  height: 600px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f1f5f9;
+  overflow: hidden;
+}
+
+/* Scrollable Main Content */
+.bca-ui-root .scrollable-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  scrollbar-gutter: stable;
+}
+
+/* Section Label Style */
+.bca-ui-root .section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #64748b;
+}
+
+.bca-ui-root .section-label-blue {
+  color: #2563eb;
+}
+
+/* Result Wrapper with Copy Overlay */
+.bca-ui-root .result-wrapper {
+  position: relative;
+}
+
+.bca-ui-root .copy-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.bca-ui-root .result-wrapper:hover .copy-overlay {
+  opacity: 1;
+}
+
+.bca-ui-root .copy-btn-small {
+  background: #ffffff;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bca-ui-root .copy-btn-small:hover {
+  color: #3b82f6;
+  border-color: #bfdbfe;
+}
+
+/* Keyboard Shortcut Style */
+.bca-ui-root .kbd {
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-size: 10px;
+  font-family: monospace;
+}
+
+/* Status Message Style */
+.bca-ui-root .status-message {
+  padding: 6px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+}
+
+.bca-ui-root .status-message-success {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.bca-ui-root .status-message-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* Icon Button Style */
+.bca-ui-root .icon-btn {
+  color: #94a3b8;
+  padding: 6px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bca-ui-root .icon-btn:hover {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.bca-ui-root .icon-btn-close:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+/* Drag Header Style */
+.bca-ui-root .drag-header {
+  cursor: grab;
+  background: linear-gradient(to right, #ffffff, #f8fafc);
+  flex-shrink: 0;
+}
+
+/* BCA Footer Style */
+.bca-ui-root .bca-footer {
+  flex-shrink: 0;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
 }
 }
 

@@ -1,14 +1,4 @@
 import { useState, useEffect } from 'react'
-import { 
-  Loader2, CheckCircle, Settings, Cpu, Languages, 
-  Keyboard, ShieldCheck, Info, MessageSquare, ExternalLink, Save,
-  BarChart3, Calendar, Filter, TrendingUp, History, Download
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectItem } from '@/components/ui/select'
 import { StorageService } from '@/services/storage-service'
 import { AIOrchestrator } from '@/services/ai/ai-orchestrator'
 import { AI_MODELS } from '@/services/ai/models'
@@ -18,7 +8,368 @@ import { useCommands } from '@/hooks/useCommands'
 import { useCurrency } from '@/hooks/useCurrency'
 
 type ValidationState = 'idle' | 'testing' | 'success' | 'error'
-type MenuId = 'general' | 'ai-engines' | 'translation' | 'shortcuts' | 'dashboard';
+type MenuId = 'general' | 'ai-engines' | 'translation' | 'shortcuts' | 'ai-intelligence'
+type ToneType = 'formal' | 'general' | 'friendly'
+
+const TONE_OPTIONS: { key: ToneType; label: string; emoji: string }[] = [
+  { key: 'formal', label: '비즈니스 (격식)', emoji: '💼' },
+  { key: 'general', label: '사내 협업', emoji: '🏢' },
+  { key: 'friendly', label: '캐주얼', emoji: '😊' }
+]
+
+// Design System Styles - bca_settings_v1.html 기반
+const styles = {
+  container: {
+    display: 'flex',
+    minHeight: '100vh',
+    background: '#f8fafc',
+    fontFamily: "'Inter', 'Noto Sans KR', sans-serif",
+    color: '#0f172a',
+  },
+  sidebar: {
+    width: '256px',
+    background: '#ffffff',
+    borderRight: '1px solid #f1f5f9',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    position: 'sticky' as const,
+    top: 0,
+    height: '100vh',
+    flexShrink: 0,
+  },
+  sidebarHeader: {
+    padding: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  logoBox: {
+    background: '#2563eb',
+    padding: '6px',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sidebarNav: {
+    flex: 1,
+    padding: '0 16px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+  },
+  sidebarItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#64748b',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    textAlign: 'left' as const,
+    width: '100%',
+  },
+  sidebarItemActive: {
+    background: '#eff6ff',
+    color: '#2563eb',
+    borderRight: '3px solid #2563eb',
+  },
+  sidebarFooter: {
+    padding: '24px',
+    borderTop: '1px solid #f1f5f9',
+    fontSize: '11px',
+    color: '#94a3b8',
+  },
+  main: {
+    flex: 1,
+    padding: '40px 48px',
+    maxWidth: '1200px',
+    minWidth: 0,
+    margin: '0 auto',
+  },
+  header: {
+    marginBottom: '40px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  title: {
+    fontSize: '30px',
+    fontWeight: 700,
+    color: '#1e293b',
+    marginBottom: '8px',
+    margin: 0,
+  },
+  subtitle: {
+    color: '#64748b',
+    fontSize: '14px',
+    margin: 0,
+  },
+  saveButton: {
+    background: '#2563eb',
+    color: '#ffffff',
+    padding: '10px 24px',
+    borderRadius: '12px',
+    fontWeight: 700,
+    fontSize: '14px',
+    border: 'none',
+    cursor: 'pointer',
+    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)',
+    transition: 'all 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  settingCard: {
+    background: '#ffffff',
+    borderRadius: '16px',
+    border: '1px solid #f1f5f9',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+    padding: '32px',
+    marginBottom: '24px',
+  },
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '24px',
+  },
+  cardIcon: {
+    width: '40px',
+    height: '40px',
+    background: '#f1f5f9',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#475569',
+  },
+  cardIconBlue: {
+    background: '#2563eb',
+    color: '#ffffff',
+    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)',
+  },
+  cardTitle: {
+    fontWeight: 700,
+    color: '#1e293b',
+    fontSize: '16px',
+    margin: 0,
+  },
+  cardDescription: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    fontWeight: 500,
+    margin: 0,
+  },
+  label: {
+    fontSize: '11px',
+    fontWeight: 700,
+    color: '#64748b',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.1em',
+    marginBottom: '8px',
+    display: 'block',
+  },
+  inputBox: {
+    width: '100%',
+    padding: '12px 16px',
+    fontSize: '14px',
+    background: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderRadius: '12px',
+    outline: 'none',
+    transition: 'all 0.2s',
+    fontFamily: "'Inter', 'Noto Sans KR', sans-serif",
+    boxSizing: 'border-box' as const,
+  },
+  optionChip: {
+    padding: '8px 16px',
+    fontSize: '12px',
+    fontWeight: 500,
+    border: '1px solid #e2e8f0',
+    borderRadius: '9999px',
+    background: 'transparent',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    color: '#64748b',
+  },
+  optionChipActive: {
+    background: '#eff6ff',
+    borderColor: '#3b82f6',
+    color: '#1d4ed8',
+  },
+  select: {
+    width: '100%',
+    padding: '12px 16px',
+    fontSize: '14px',
+    background: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderRadius: '12px',
+    outline: 'none',
+    cursor: 'pointer',
+    fontFamily: "'Inter', 'Noto Sans KR', sans-serif",
+  },
+  alert: {
+    padding: '16px',
+    borderRadius: '16px',
+    marginBottom: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    fontWeight: 700,
+  },
+  alertSuccess: {
+    background: '#2563eb',
+    color: '#ffffff',
+  },
+  alertError: {
+    background: '#fef2f2',
+    color: '#dc2626',
+    border: '1px solid #fecaca',
+  },
+  grid2: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '24px',
+  },
+  kpiGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '12px',
+  },
+  kpiCard: {
+    padding: '16px',
+    background: '#ffffff',
+    borderRadius: '12px',
+    border: '1px solid #e2e8f0',
+  },
+  kpiLabel: {
+    fontSize: '10px',
+    fontWeight: 700,
+    color: '#94a3b8',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.1em',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginBottom: '8px',
+  },
+  kpiValue: {
+    fontSize: '20px',
+    fontWeight: 700,
+    color: '#1e293b',
+  },
+  filterBox: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    alignItems: 'center',
+    gap: '16px',
+    padding: '16px',
+    background: '#f8fafc',
+    borderRadius: '12px',
+    border: '1px solid #f1f5f9',
+    marginBottom: '24px',
+  },
+  chartBox: {
+    padding: '24px',
+    background: '#f8fafc',
+    borderRadius: '12px',
+    border: '1px solid #f1f5f9',
+    height: '192px',
+    marginBottom: '24px',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse' as const,
+    fontSize: '14px',
+  },
+  tableHeader: {
+    background: '#f8fafc',
+    borderBottom: '1px solid #f1f5f9',
+  },
+  th: {
+    padding: '12px 16px',
+    textAlign: 'left' as const,
+    fontSize: '11px',
+    fontWeight: 700,
+    color: '#94a3b8',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.1em',
+  },
+  td: {
+    padding: '12px 16px',
+    borderBottom: '1px solid #f8fafc',
+  },
+  shortcutItem: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid',
+    marginBottom: '12px',
+  },
+  shortcutSet: {
+    background: 'rgba(236, 253, 245, 0.5)',
+    borderColor: 'rgba(167, 243, 208, 0.6)',
+  },
+  shortcutNotSet: {
+    background: 'rgba(254, 252, 232, 0.5)',
+    borderColor: 'rgba(253, 230, 138, 0.6)',
+  },
+  kbd: {
+    minWidth: '32px',
+    height: '32px',
+    padding: '0 10px',
+    background: '#ffffff',
+    border: '1px solid #e2e8f0',
+    borderRadius: '8px',
+    fontSize: '12px',
+    fontWeight: 700,
+    color: '#334155',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  proTipBox: {
+    padding: '24px',
+    background: '#2563eb',
+    borderRadius: '16px',
+    color: '#ffffff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '16px',
+    marginTop: '24px',
+  },
+  aiIntelligenceCard: {
+    background: 'linear-gradient(to bottom right, #ffffff, rgba(239, 246, 255, 0.3))',
+    borderRadius: '16px',
+    border: '2px solid #dbeafe',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+    padding: '32px',
+    marginBottom: '32px',
+  },
+  checkboxWrapper: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '16px',
+    padding: '16px',
+    borderRadius: '12px',
+    background: '#f8fafc',
+    border: '1px solid #f1f5f9',
+  },
+}
 
 function SettingsPage() {
   const [activeMenu, setActiveMenu] = useState<MenuId>('ai-engines')
@@ -36,14 +387,20 @@ function SettingsPage() {
     provider: 'all',
     model: 'all',
     task: 'all',
-    period: '7d' // 1d, 7d, 30d, all
+    period: '7d'
   })
   
   // 기능 설정 상태
   const [autoCopyEnabled, setAutoCopyEnabledState] = useState(true)
-  const [autoCopyTone, setAutoCopyToneState] = useState<'formal' | 'general' | 'friendly'>('formal')
-  const [instantToneStyle, setInstantToneStyleState] = useState<'formal' | 'general' | 'friendly'>('formal')
+  const [autoCopyTone, setAutoCopyToneState] = useState<ToneType>('formal')
+  const [instantToneStyle, setInstantToneStyleState] = useState<ToneType>('formal')
   const [targetLang, setTargetLang] = useState<TargetLanguage>('ko')
+  
+  // AI Intelligence 상태
+  const [workDescription, setWorkDescription] = useState('')
+  const [aiOptimizeStatus, setAiOptimizeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [aiOptimizeResult, setAiOptimizeResult] = useState('')
+  const [aiOptimizeError, setAiOptimizeError] = useState('')
   
   // UI 상태
   const [validationState, setValidationState] = useState<ValidationState>('idle')
@@ -118,10 +475,12 @@ function SettingsPage() {
         }
       })
       
+      setValidationState('success')
       setMessage('설정이 안전하게 저장되었습니다.')
-      setTimeout(() => setMessage(''), 3000)
+      setTimeout(() => { setMessage(''); setValidationState('idle') }, 3000)
     } catch (error) {
       console.error('Save error:', error)
+      setValidationState('error')
       setMessage('저장 중 오류가 발생했습니다.')
     } finally {
       setIsSaving(false)
@@ -131,6 +490,7 @@ function SettingsPage() {
   const handleTestConnection = async () => {
     const currentApiKey = apiKeys[selectedProvider]
     if (!currentApiKey.trim()) {
+      setValidationState('error')
       setMessage('API 키를 먼저 입력해주세요.')
       return
     }
@@ -152,484 +512,807 @@ function SettingsPage() {
     }
   }
 
+  const handleAiOptimize = async () => {
+    if (!workDescription.trim()) {
+      setAiOptimizeError('직무 설명을 입력해주세요.')
+      return
+    }
+    
+    const apiKey = apiKeys.gemini
+    if (!apiKey) {
+      setAiOptimizeError('Gemini API 키를 먼저 설정해주세요.')
+      return
+    }
+
+    setAiOptimizeStatus('loading')
+    setAiOptimizeError('')
+    setAiOptimizeResult('')
+
+    try {
+      const systemPrompt = "당신은 비즈니스 커뮤니케이션 전문가입니다. 사용자의 직무 설명을 바탕으로, 해당 사용자에게 가장 적합한 AI 시스템 프롬프트와 페르소나를 한 문장으로 생성하십시오. 출력은 따옴표 없이 한국어로만 작성하세요."
+      
+      const result = await AIOrchestrator.execute(
+        `${systemPrompt}\n\n사용자 직무: ${workDescription}`,
+        'translation',
+        {
+          provider: 'gemini',
+          model: providerModels.gemini,
+          apiKey,
+          targetLanguage: 'ko'
+        }
+      )
+
+      if (result) {
+        setAiOptimizeResult(result as string)
+        setAiOptimizeStatus('success')
+      } else {
+        throw new Error('결과를 생성할 수 없습니다.')
+      }
+    } catch (err: any) {
+      setAiOptimizeError('AI 연결 중 오류가 발생했습니다. 다시 시도해주세요.')
+      setAiOptimizeStatus('error')
+    }
+  }
+
+  const parseShortcut = (shortcut: string): string[] => {
+    if (!shortcut) return []
+    const keys = shortcut.split('+').map(key => key.trim())
+    return keys.map(key => {
+      const normalizedKey = key.toLowerCase()
+      if (key === '⌘' || normalizedKey === 'command' || normalizedKey === 'cmd') return '⌘'
+      if (key === '⌥' || normalizedKey === 'alt' || normalizedKey === 'option') return '⌥'
+      if (key === '⌃' || normalizedKey === 'ctrl' || normalizedKey === 'control') return '⌃'
+      if (key === '⇧' || normalizedKey === 'shift') return '⇧'
+      return key.length === 1 ? key.toUpperCase() : key
+    })
+  }
+
+  const getMenuTitle = () => {
+    switch (activeMenu) {
+      case 'ai-engines': return 'AI 모델 설정'
+      case 'general': return '개인화 선호도'
+      case 'ai-intelligence': return '✨ AI 인텔리전스'
+      case 'translation': return '번역 설정'
+      case 'shortcuts': return '단축키 가이드'
+      default: return '설정'
+    }
+  }
+
   return (
-    <div className="flex h-screen bg-zinc-50 overflow-hidden text-zinc-900 font-sans">
-      <aside className="w-72 bg-white border-r border-zinc-200 flex flex-col shrink-0">
-        <div className="p-8 border-b border-zinc-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center shadow-lg shadow-zinc-200">
-              <Settings className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-lg font-extrabold tracking-tight">환경 설정</h1>
+    <div style={styles.container}>
+      {/* Sidebar */}
+      <aside style={styles.sidebar}>
+        <div style={styles.sidebarHeader}>
+          <div style={styles.logoBox}>
+            <i className="fa-solid fa-wand-magic-sparkles" style={{ color: 'white', fontSize: '16px' }}></i>
           </div>
+          <span style={{ fontWeight: 700, color: '#1e293b', letterSpacing: '-0.025em' }}>
+            Nexus AI <span style={{ color: '#2563eb' }}>BCA</span>
+          </span>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          <MenuButton active={activeMenu === 'ai-engines'} onClick={() => setActiveMenu('ai-engines')} icon={<Cpu className="w-4 h-4" />} label="AI 엔진 및 모델" />
-          <MenuButton active={activeMenu === 'general'} onClick={() => setActiveMenu('general')} icon={<MessageSquare className="w-4 h-4" />} label="일반 및 톤 설정" />
-          <MenuButton active={activeMenu === 'translation'} onClick={() => setActiveMenu('translation')} icon={<Languages className="w-4 h-4" />} label="번역 환경 설정" />
-          <MenuButton active={activeMenu === 'shortcuts'} onClick={() => setActiveMenu('shortcuts')} icon={<Keyboard className="w-4 h-4" />} label="단축키 관리" />
+        <nav style={styles.sidebarNav}>
+          {[
+            { id: 'ai-engines', icon: 'fa-microchip', label: 'AI 모델 설정' },
+            { id: 'general', icon: 'fa-sliders', label: '개인화 선호도' },
+            { id: 'ai-intelligence', icon: 'fa-sparkles', label: '✨ AI 인텔리전스' },
+            { id: 'translation', icon: 'fa-language', label: '번역 설정' },
+            { id: 'shortcuts', icon: 'fa-keyboard', label: '단축키 가이드' },
+          ].map((menu) => (
+            <button
+              key={menu.id}
+              onClick={() => setActiveMenu(menu.id as MenuId)}
+              style={{
+                ...styles.sidebarItem,
+                ...(activeMenu === menu.id ? styles.sidebarItemActive : {})
+              }}
+              onMouseEnter={(e) => {
+                if (activeMenu !== menu.id) {
+                  e.currentTarget.style.background = '#f8fafc'
+                  e.currentTarget.style.color = '#1e293b'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeMenu !== menu.id) {
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.color = '#64748b'
+                }
+              }}
+            >
+              <i className={`fa-solid ${menu.icon}`} style={{ width: '20px', textAlign: 'center' }}></i>
+              {menu.label}
+            </button>
+          ))}
         </nav>
 
-        <div className="p-6 border-t border-zinc-100">
-          <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 space-y-2">
-            <div className="flex items-center gap-2 text-[12px] font-bold text-zinc-400 uppercase tracking-widest">
-              <ShieldCheck className="w-3 h-3 text-green-500" />
-              Privacy Secured
-            </div>
-            <p className="text-[11px] text-zinc-500 leading-relaxed whitespace-nowrap">모든 데이터는 로컬에 암호화되어 저장됩니다.</p>
-          </div>
-          <div className="mt-4 px-1">
-            <p className="text-[11px] text-zinc-400 font-medium">© 2020 SIREAL</p>
-          </div>
+        <div style={styles.sidebarFooter}>
+          <p style={{ margin: 0 }}>© 2026 Nexus AI Studio</p>
+          <p style={{ margin: 0 }}>Version 2.5.1 Stable</p>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto bg-zinc-50/50 relative">
-        <div className="max-w-6xl mx-auto p-12 pb-32">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h2 className="text-3xl font-black tracking-tight text-zinc-900 capitalize">
-                {activeMenu === 'general' && '일반 설정'}
-                {activeMenu === 'ai-engines' && 'AI 엔진 구성'}
-                {activeMenu === 'translation' && '번역 설정'}
-                {activeMenu === 'shortcuts' && '단축키 가이드'}
-              </h2>
-              <p className="text-lg text-zinc-500 mt-1">BCA 어시스턴트의 동작 방식을 세밀하게 조정합니다.</p>
-            </div>
-            <Button onClick={handleSaveAll} disabled={isSaving} className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl px-6 font-bold shadow-xl shadow-zinc-200 gap-2 h-11 transition-all active:scale-95 text-base">
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              설정 저장하기
-            </Button>
+      {/* Main Content */}
+      <main style={styles.main}>
+        {/* Header */}
+        <header style={styles.header}>
+          <div>
+            <h2 style={styles.title}>{getMenuTitle()}</h2>
+            <p style={styles.subtitle}>AI 모델 연동 및 커뮤니케이션 스타일을 개인화하십시오.</p>
           </div>
-
-          {message && (
-            <Alert className={`mb-8 border-none shadow-sm rounded-2xl p-4 animate-in fade-in slide-in-from-top-4 duration-500 ${validationState === 'error' ? 'bg-red-50 text-red-700' : 'bg-zinc-900 text-white'}`}>
-              <div className="flex items-center gap-3">
-                {validationState === 'success' ? <CheckCircle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
-                <AlertDescription className="text-base font-bold">{message}</AlertDescription>
-              </div>
-            </Alert>
-          )}
-
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {activeMenu === 'general' && (
-              <>
-                <Section title="자동화 환경">
-                  <div className="p-8 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-8">
-                    <div className="flex items-start gap-4 p-6 rounded-2xl bg-zinc-50 border border-zinc-100 transition-colors">
-                      <Checkbox id="auto-copy" checked={autoCopyEnabled} onCheckedChange={(v) => setAutoCopyEnabledState(!!v)} className="mt-1.5" />
-                      <div className="space-y-1.5">
-                        <label htmlFor="auto-copy" className="text-lg font-bold cursor-pointer text-zinc-900">변환 완료 시 결과물 자동 복사</label>
-                        <p className="text-base text-zinc-500 leading-relaxed">팝업에서 톤 변환이 완료되면 즉시 클립보드에 저장합니다.</p>
-                      </div>
-                    </div>
-                    {autoCopyEnabled && (
-                      <div className="px-2 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <label className="text-sm font-bold text-zinc-400 uppercase tracking-widest ml-1">우선 복사할 스타일</label>
-                        <Select value={autoCopyTone} onValueChange={(v) => setAutoCopyToneState(v as any)}>
-                          <SelectItem value="formal" className="text-base">비즈니스 이메일 (격식)</SelectItem>
-                          <SelectItem value="general" className="text-base">사내 메신저 (일반)</SelectItem>
-                          <SelectItem value="friendly" className="text-base">캐주얼 채팅 (친근)</SelectItem>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
-                </Section>
-                <Section title="선택한 텍스트 즉시 정중한 문장 변환">
-                  <div className="p-8 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-8">
-                    <div className="flex items-start gap-4 p-6 rounded-2xl bg-zinc-50 border border-zinc-100 transition-colors">
-                      <Keyboard className="w-6 h-6 text-zinc-400 mt-1.5" />
-                      <div className="space-y-1.5">
-                        <h4 className="text-lg font-bold text-zinc-900">즉시 정중한 문장 변환 설정</h4>
-                        <p className="text-base text-zinc-500 leading-relaxed">
-                          텍스트를 선택하고 단축키(기본: <kbd className="px-1.5 py-0.5 bg-white border border-zinc-200 rounded text-[13px] font-black mx-0.5">
-                            {commands.find(c => c.name === 'instant-tone-conversion')?.shortcut || '설정되지 않음'}
-                          </kbd>)를 누르면, 즉시 교체됩니다.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="px-2 space-y-3">
-                      <label className="text-sm font-bold text-zinc-400 uppercase tracking-widest ml-1">적용할 스타일</label>
-                      <Select value={instantToneStyle} onValueChange={(v) => setInstantToneStyleState(v as any)}>
-                        <SelectItem value="formal" className="text-base">비즈니스 이메일 (격식)</SelectItem>
-                        <SelectItem value="general" className="text-base">사내 메신저 (일반)</SelectItem>
-                        <SelectItem value="friendly" className="text-base">캐주얼 채팅 (친근)</SelectItem>
-                      </Select>
-                    </div>
-                  </div>
-                </Section>
-              </>
+          <button 
+            onClick={handleSaveAll}
+            disabled={isSaving}
+            style={{
+              ...styles.saveButton,
+              opacity: isSaving ? 0.7 : 1,
+            }}
+            onMouseEnter={(e) => { if (!isSaving) e.currentTarget.style.background = '#1d4ed8' }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#2563eb' }}
+          >
+            {isSaving ? (
+              <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+            ) : (
+              <i className="fa-solid fa-floppy-disk"></i>
             )}
+            변경 사항 저장
+          </button>
+        </header>
 
-            {activeMenu === 'ai-engines' && (
-              <div className="space-y-8">
-                <Section title="엔진 및 API 통합 구성">
-                  <div className="p-8 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-8">
-                    <div className="flex flex-row items-end gap-6 w-full">
-                      <div className="flex-1 space-y-2">
-                        <label className="text-sm font-bold text-zinc-400 uppercase tracking-widest ml-1">활성 엔진</label>
-                        <Select value={selectedProvider} onValueChange={(v) => setSelectedProviderState(v as AIProvider)}>
-                          <SelectItem value="gemini" className="text-base">Google Gemini</SelectItem>
-                          <SelectItem value="chatgpt" className="text-base">OpenAI GPT</SelectItem>
-                          <SelectItem value="claude" className="text-base">Anthropic Claude</SelectItem>
-                        </Select>
-                      </div>
-                      <div className="flex-[1.5] space-y-2">
-                        <label className="text-sm font-bold text-zinc-400 uppercase tracking-widest ml-1">상세 모델</label>
-                        <Select value={providerModels[selectedProvider]} onValueChange={(v) => setProviderModels(prev => ({ ...prev, [selectedProvider]: v }))}>
-                          {AI_MODELS[selectedProvider].map(m => {
-                            const costs = formatCost(m.pricePer1M);
-                            return (
-                              <SelectItem key={m.id} value={m.id}>
-                                <div className="flex flex-col py-0.5">
-                                  <span className="font-bold">{m.name}</span>
-                                  <span className="text-[10px] text-zinc-400 font-medium">
-                                    {costs.krw} ({costs.usd}) / 1M tokens
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            );
-                          })}
-                        </Select>
-                      </div>
-                      <div className="flex-[2] space-y-2">
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm font-bold text-zinc-400 uppercase tracking-widest ml-1">API KEY</label>
-                          <div className="flex items-center gap-3">
-                            <a 
-                              href={
-                                selectedProvider === 'gemini' ? 'https://aistudio.google.com/app/api-keys' :
-                                selectedProvider === 'chatgpt' ? 'https://platform.openai.com/api-keys' :
-                                'https://platform.claude.com/settings/keys'
-                              }
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                            >
-                              <ExternalLink className="w-2.5 h-2.5" />
-                              API 키 발급받기
-                            </a>
-                            <button onClick={handleTestConnection} disabled={validationState === 'testing'} className="text-sm font-bold text-zinc-500 hover:text-zinc-900 flex items-center gap-1">
-                              {validationState === 'testing' ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <ExternalLink className="w-2.5 h-2.5" />}
-                              연결 테스트
-                            </button>
-                          </div>
-                        </div>
-                        <Input type="password" value={apiKeys[selectedProvider]} onChange={(e) => setApiKeys(prev => ({ ...prev, [selectedProvider]: e.target.value }))} placeholder="인증 키를 입력하세요" className="h-11 bg-zinc-50 border-zinc-200 font-mono text-base rounded-xl focus:bg-white transition-all" />
-                      </div>
-                    </div>
-                  </div>
-                </Section>
+        {/* Status Message */}
+        {message && (
+          <div style={{
+            ...styles.alert,
+            ...(validationState === 'error' ? styles.alertError : styles.alertSuccess)
+          }}>
+            <i className={`fa-solid ${validationState === 'success' ? 'fa-check-circle' : 'fa-info-circle'}`}></i>
+            {message}
+          </div>
+        )}
 
-
-                <Section title="사용량 분석 대시보드">
-                  <div className="space-y-6">
-                    {/* Filters */}
-                    <div className="p-6 bg-white rounded-3xl border border-zinc-200 shadow-sm flex flex-wrap items-center gap-4">
-                      <div className="flex-1 min-w-[120px] space-y-1.5">
-                        <label className="text-[12px] font-bold text-zinc-400 uppercase flex items-center gap-1">
-                          <Cpu className="w-3 h-3" /> 엔진
-                        </label>
-                        <Select value={dashboardFilter.provider} onValueChange={(v) => setDashboardFilter(prev => ({ ...prev, provider: v }))}>
-                          <SelectItem value="all" className="text-base">전체 엔진</SelectItem>
-                          <SelectItem value="gemini" className="text-base">Gemini</SelectItem>
-                          <SelectItem value="chatgpt" className="text-base">OpenAI</SelectItem>
-                          <SelectItem value="claude" className="text-base">Claude</SelectItem>
-                        </Select>
-                      </div>
-                      <div className="flex-1 min-w-[120px] space-y-1.5">
-                        <label className="text-[12px] font-bold text-zinc-400 uppercase flex items-center gap-1">
-                          <Filter className="w-3 h-3" /> 태스크
-                        </label>
-                        <Select value={dashboardFilter.task} onValueChange={(v) => setDashboardFilter(prev => ({ ...prev, task: v }))}>
-                          <SelectItem value="all" className="text-base">전체 작업</SelectItem>
-                          <SelectItem value="tone-conversion" className="text-base">톤 변환</SelectItem>
-                          <SelectItem value="translation" className="text-base">번역</SelectItem>
-                        </Select>
-                      </div>
-                      <div className="flex-1 min-w-[120px] space-y-1.5">
-                        <label className="text-[12px] font-bold text-zinc-400 uppercase flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> 기간
-                        </label>
-                        <Select value={dashboardFilter.period} onValueChange={(v) => setDashboardFilter(prev => ({ ...prev, period: v }))}>
-                          <SelectItem value="1d" className="text-base">오늘</SelectItem>
-                          <SelectItem value="7d" className="text-base">최근 7일</SelectItem>
-                          <SelectItem value="30d" className="text-base">최근 한달</SelectItem>
-                          <SelectItem value="all" className="text-base">전체</SelectItem>
-                        </Select>
-                      </div>
-                      <Button variant="ghost" size="icon" className="mt-4 rounded-xl border border-zinc-100" onClick={() => setDashboardFilter({ provider: 'all', model: 'all', task: 'all', period: '7d' })}>
-                        <History className="w-4 h-4 text-zinc-400" />
-                      </Button>
-                    </div>
-
-                    {/* Charts / KPIs */}
-                    <div className="grid grid-cols-4 gap-4">
-                      <DashboardKPI label="총 호출" value={`${filteredLogs.length}회`} icon={<TrendingUp className="w-3 h-3" />} />
-                      <DashboardKPI 
-                        label="총 비용" 
-                        value={(() => {
-                          const totalUSD = filteredLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0);
-                          const costs = formatCost(totalUSD);
-                          return (
-                            <div className="flex flex-col">
-                              <span className="text-2xl font-black">{costs.krw}</span>
-                              <span className="text-[11px] text-zinc-400 font-bold -mt-1">{costs.usd}</span>
-                            </div>
-                          );
-                        })()} 
-                        icon={<BarChart3 className="w-3 h-3" />} 
-                      />
-                      <DashboardKPI label="평균 응답" value="1.2s" icon={<Loader2 className="w-3 h-3" />} />
-                      <DashboardKPI label="추정 토큰" value={`${Math.round(filteredLogs.reduce((acc, curr) => acc + (curr.inputTokens || 0) + (curr.outputTokens || 0), 0) / 1000)}K`} icon={<Cpu className="w-3 h-3" />} />
-                    </div>
-
-                    {/* Simple Bar Chart SVG */}
-                    <div className="p-8 bg-white rounded-3xl border border-zinc-200 shadow-sm h-64 flex flex-col">
-                      <div className="flex items-center justify-between mb-6">
-                        <h4 className="text-base font-black flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4" /> 일별 사용량 추이
-                        </h4>
-                      </div>
-                      <div className="flex-1 flex items-end justify-between gap-2 px-2 border-b border-zinc-100 pb-2">
-                        {[...Array(7)].map((_, i) => {
-                          const date = new Date()
-                          date.setDate(date.getDate() - (6 - i))
-                          const count = usageLogs.filter(l => new Date(l.timestamp).toDateString() === date.toDateString()).length
-                          const maxCount = Math.max(...[...Array(7)].map((_, j) => {
-                            const d = new Date()
-                            d.setDate(d.getDate() - (6 - j))
-                            return usageLogs.filter(l => new Date(l.timestamp).toDateString() === d.toDateString()).length
-                          }), 1)
-                          const height = (count / maxCount) * 100
-                          return (
-                            <div key={i} className="flex-1 flex flex-col items-center group relative h-full justify-end">
-                              <div className="absolute -top-6 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-900 text-white text-[12px] px-2 py-1 rounded-md font-bold mb-1">
-                                {count}회
-                              </div>
-                              <div className="w-full bg-zinc-100 rounded-t-lg group-hover:bg-zinc-200 transition-colors" style={{ height: `${height || 5}%` }}>
-                                <div className="w-full bg-zinc-900 rounded-t-lg transition-all duration-700" style={{ height: `${height}%` }} />
-                              </div>
-                              <span className="text-[11px] text-zinc-400 font-bold mt-2">{date.getDate()}일</span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Data Table */}
-                    <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden">
-                      <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
-                        <h4 className="text-base font-black flex items-center gap-2">
-                          <History className="w-4 h-4" /> 상세 실행 로그
-                        </h4>
-                        <Button variant="ghost" size="sm" className="text-[12px] font-bold gap-1 text-zinc-400">
-                          <Download className="w-3 h-3" /> 내보내기
-                        </Button>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-base">
-                          <thead className="bg-zinc-50 border-b border-zinc-100 text-zinc-400 uppercase tracking-widest font-black">
-                            <tr>
-                              <th className="px-6 py-4">일시</th>
-                              <th className="px-6 py-4">엔진/모델</th>
-                              <th className="px-6 py-4">작업</th>
-                              <th className="px-6 py-4">토큰(In/Out)</th>
-                              <th className="px-6 py-4">비용</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-zinc-50">
-                            {filteredLogs.slice(0, 10).map((log, i) => (
-                              <tr key={i} className="hover:bg-zinc-50 transition-colors">
-                                <td className="px-6 py-4 font-medium text-zinc-500">{new Date(log.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                                <td className="px-6 py-4">
-                                  <div className="flex flex-col">
-                                    <span className="font-bold text-zinc-900 uppercase">{log.provider}</span>
-                                    <span className="text-sm text-zinc-400">{log.model}</span>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <span className={`px-2 py-1 rounded-md font-bold text-sm ${log.task === 'tone-conversion' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
-                                    {log.task === 'tone-conversion' ? '톤 변환' : '번역'}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 font-mono text-zinc-500">{log.inputTokens}/{log.outputTokens}</td>
-                                <td className="px-6 py-4">
-                                  {(() => {
-                                    const costs = formatCost(log.cost || 0);
-                                    return (
-                                      <div className="flex flex-col">
-                                        <span className="font-bold text-zinc-900">{costs.krw}</span>
-                                        <span className="text-[10px] text-zinc-400 font-bold -mt-1">{costs.usd}</span>
-                                      </div>
-                                    );
-                                  })()}
-                                </td>
-                              </tr>
-                            ))}
-                            {filteredLogs.length === 0 && (
-                              <tr>
-                                <td colSpan={5} className="px-6 py-12 text-center text-zinc-400 font-medium italic text-base">데이터가 존재하지 않습니다.</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                </Section>
+        {/* AI Engines Settings */}
+        {activeMenu === 'ai-engines' && (
+          <>
+            <section style={styles.settingCard}>
+              <div style={styles.cardHeader}>
+                <div style={styles.cardIcon}>
+                  <i className="fa-solid fa-key"></i>
+                </div>
+                <div>
+                  <h3 style={styles.cardTitle}>API 연동 관리</h3>
+                  <p style={styles.cardDescription}>서비스를 구동하기 위한 AI 모델의 API 키를 설정합니다.</p>
+                </div>
               </div>
-            )}
 
-            {activeMenu === 'translation' && (
-              <Section title="번역 엔진 설정">
-                <div className="p-8 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-base font-bold ml-1">기본 타겟 언어</label>
-                    <Select value={targetLang} onValueChange={(v) => setTargetLang(v as TargetLanguage)}>
-                      <SelectItem value="ko" className="text-base">한국어 (Korean)</SelectItem>
-                      <SelectItem value="en" className="text-base">영어 (English)</SelectItem>
-                      <SelectItem value="ja" className="text-base">일본어 (Japanese)</SelectItem>
-                      <SelectItem value="zh-CN" className="text-base">중국어 (Chinese)</SelectItem>
-                    </Select>
-                    <p className="text-sm text-zinc-400 ml-1">단축키를 통한 즉시 번역 시 이 언어가 기본값으로 사용됩니다.</p>
+              <div style={styles.grid2}>
+                <div>
+                  <label style={styles.label}>활성 엔진</label>
+                  <select 
+                    value={selectedProvider} 
+                    onChange={(e) => setSelectedProviderState(e.target.value as AIProvider)}
+                    style={styles.select}
+                  >
+                    <option value="gemini">Google Gemini</option>
+                    <option value="chatgpt">OpenAI GPT</option>
+                    <option value="claude">Anthropic Claude</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={styles.label}>상세 모델</label>
+                  <select 
+                    value={providerModels[selectedProvider]} 
+                    onChange={(e) => setProviderModels(prev => ({ ...prev, [selectedProvider]: e.target.value }))}
+                    style={styles.select}
+                  >
+                    {AI_MODELS[selectedProvider].map(m => {
+                      const costs = formatCost(m.pricePer1M)
+                      return (
+                        <option key={m.id} value={m.id}>
+                          {m.name} - {costs.krw} ({costs.usd}) / 1M tokens
+                        </option>
+                      )
+                    })}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <label style={{ ...styles.label, marginBottom: 0 }}>API KEY</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <a 
+                      href={
+                        selectedProvider === 'gemini' ? 'https://aistudio.google.com/app/api-keys' :
+                        selectedProvider === 'chatgpt' ? 'https://platform.openai.com/api-keys' :
+                        'https://platform.claude.com/settings/keys'
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontSize: '12px', fontWeight: 700, color: '#2563eb', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <i className="fa-solid fa-external-link-alt" style={{ fontSize: '10px' }}></i>
+                      API 키 발급받기
+                    </a>
+                    <button 
+                      onClick={handleTestConnection} 
+                      disabled={validationState === 'testing'} 
+                      style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      {validationState === 'testing' ? (
+                        <div style={{ width: '12px', height: '12px', border: '2px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                      ) : (
+                        <i className="fa-solid fa-plug" style={{ fontSize: '10px' }}></i>
+                      )}
+                      연결 테스트
+                    </button>
                   </div>
                 </div>
-              </Section>
-            )}
+                <input 
+                  type="password" 
+                  value={apiKeys[selectedProvider]} 
+                  onChange={(e) => setApiKeys(prev => ({ ...prev, [selectedProvider]: e.target.value }))} 
+                  placeholder="인증 키를 입력하세요" 
+                  style={styles.inputBox}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6'
+                    e.currentTarget.style.background = '#ffffff'
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#e2e8f0'
+                    e.currentTarget.style.background = '#f8fafc'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                />
+              </div>
+            </section>
 
-            {activeMenu === 'shortcuts' && (
-              <Section title="시스템 단축키 안내">
-                <div className="p-8 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-6">
-                  <div className="grid grid-cols-1 gap-4">
+            {/* Usage Dashboard */}
+            <section style={styles.settingCard}>
+              <div style={styles.cardHeader}>
+                <div style={styles.cardIcon}>
+                  <i className="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                  <h3 style={styles.cardTitle}>사용량 분석 대시보드</h3>
+                  <p style={styles.cardDescription}>API 호출 내역과 비용을 모니터링합니다.</p>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div style={styles.filterBox}>
+                <div style={{ flex: 1, minWidth: '100px' }}>
+                  <label style={{ ...styles.kpiLabel, marginBottom: '6px' }}>
+                    <i className="fa-solid fa-microchip" style={{ fontSize: '10px' }}></i> 엔진
+                  </label>
+                  <select 
+                    value={dashboardFilter.provider} 
+                    onChange={(e) => setDashboardFilter(prev => ({ ...prev, provider: e.target.value }))}
+                    style={{ ...styles.select, padding: '8px 12px', fontSize: '12px' }}
+                  >
+                    <option value="all">전체 엔진</option>
+                    <option value="gemini">Gemini</option>
+                    <option value="chatgpt">OpenAI</option>
+                    <option value="claude">Claude</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1, minWidth: '100px' }}>
+                  <label style={{ ...styles.kpiLabel, marginBottom: '6px' }}>
+                    <i className="fa-solid fa-filter" style={{ fontSize: '10px' }}></i> 태스크
+                  </label>
+                  <select 
+                    value={dashboardFilter.task} 
+                    onChange={(e) => setDashboardFilter(prev => ({ ...prev, task: e.target.value }))}
+                    style={{ ...styles.select, padding: '8px 12px', fontSize: '12px' }}
+                  >
+                    <option value="all">전체 작업</option>
+                    <option value="tone-conversion">톤 변환</option>
+                    <option value="translation">번역</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1, minWidth: '100px' }}>
+                  <label style={{ ...styles.kpiLabel, marginBottom: '6px' }}>
+                    <i className="fa-solid fa-calendar" style={{ fontSize: '10px' }}></i> 기간
+                  </label>
+                  <select 
+                    value={dashboardFilter.period} 
+                    onChange={(e) => setDashboardFilter(prev => ({ ...prev, period: e.target.value }))}
+                    style={{ ...styles.select, padding: '8px 12px', fontSize: '12px' }}
+                  >
+                    <option value="1d">오늘</option>
+                    <option value="7d">최근 7일</option>
+                    <option value="30d">최근 한달</option>
+                    <option value="all">전체</option>
+                  </select>
+                </div>
+                <button 
+                  onClick={() => setDashboardFilter({ provider: 'all', model: 'all', task: 'all', period: '7d' })}
+                  style={{ marginTop: '20px', padding: '8px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer' }}
+                >
+                  <i className="fa-solid fa-rotate-right" style={{ color: '#94a3b8' }}></i>
+                </button>
+              </div>
+
+              {/* KPIs */}
+              <div style={styles.kpiGrid}>
+                <div style={styles.kpiCard}>
+                  <div style={styles.kpiLabel}>
+                    <i className="fa-solid fa-arrow-trend-up"></i> 총 호출
+                  </div>
+                  <div style={styles.kpiValue}>{filteredLogs.length}회</div>
+                </div>
+                <div style={styles.kpiCard}>
+                  <div style={styles.kpiLabel}>
+                    <i className="fa-solid fa-chart-bar"></i> 총 비용
+                  </div>
+                  <div>
                     {(() => {
-                      const orderedNames = [
-                        '_execute_action',
-                        'tone-conversion',
-                        'instant-translation',
-                        'instant-tone-conversion'
-                      ];
-                      
-                      const getLabel = (name: string) => {
-                        switch(name) {
-                          case '_execute_action': return '클립보드 텍스트를 번역(팝업)';
-                          case 'tone-conversion': return '클립보드 텍스트를 정중한 문장으로 변환 (팝업)';
-                          case 'instant-translation': return '선택한 텍스트 즉시 번역';
-                          case 'instant-tone-conversion': return '선택한 텍스트 즉시 정중한 문장 변환';
-                          default: return name;
-                        }
-                      };
-
-                      return orderedNames.map(name => {
-                        const cmd = commands.find(c => c.name === name);
-                        return (
-                          <ShortcutItem 
-                            key={name}
-                            label={getLabel(name)}
-                            shortcut={cmd?.shortcut || ''} 
-                          />
-                        );
-                      });
+                      const totalUSD = filteredLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0)
+                      const costs = formatCost(totalUSD)
+                      return (
+                        <>
+                          <div style={styles.kpiValue}>{costs.krw}</div>
+                          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 500 }}>{costs.usd}</div>
+                        </>
+                      )
                     })()}
                   </div>
-                  <div className="mt-6 p-8 bg-zinc-900 rounded-3xl text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 text-zinc-400 font-bold text-sm uppercase tracking-widest">
-                        <Keyboard className="w-5 h-5 text-white" />
-                        Pro Tip
-                      </div>
-                      <p className="text-lg leading-relaxed font-medium">
-                        단축키가 다른 앱과 충돌하나요? 크롬 설정에서 자유롭게 변경할 수 있습니다.
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
-                      className="bg-white text-zinc-900 hover:bg-zinc-100 rounded-xl px-6 font-bold h-12 gap-2 shrink-0 transition-all active:scale-95 shadow-lg shadow-white/10 text-base"
-                    >
-                      단축키 설정 바로가기
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
+                </div>
+                <div style={styles.kpiCard}>
+                  <div style={styles.kpiLabel}>
+                    <i className="fa-solid fa-clock"></i> 평균 응답
+                  </div>
+                  <div style={styles.kpiValue}>1.2s</div>
+                </div>
+                <div style={styles.kpiCard}>
+                  <div style={styles.kpiLabel}>
+                    <i className="fa-solid fa-microchip"></i> 추정 토큰
+                  </div>
+                  <div style={styles.kpiValue}>
+                    {Math.round(filteredLogs.reduce((acc, curr) => acc + (curr.inputTokens || 0) + (curr.outputTokens || 0), 0) / 1000)}K
                   </div>
                 </div>
-              </Section>
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
-  )
-}
+              </div>
 
-interface MenuButtonProps {
-  active: boolean
-  onClick: () => void
-  icon: React.ReactNode
-  label: string
-}
+              {/* Chart */}
+              <div style={{ ...styles.chartBox, marginTop: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontWeight: 700, fontSize: '14px', color: '#334155' }}>
+                  <i className="fa-solid fa-arrow-trend-up"></i> 일별 사용량 추이
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', height: '100px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                  {[...Array(7)].map((_, i) => {
+                    const date = new Date()
+                    date.setDate(date.getDate() - (6 - i))
+                    const count = usageLogs.filter(l => new Date(l.timestamp).toDateString() === date.toDateString()).length
+                    const maxCount = Math.max(...[...Array(7)].map((_, j) => {
+                      const d = new Date()
+                      d.setDate(d.getDate() - (6 - j))
+                      return usageLogs.filter(l => new Date(l.timestamp).toDateString() === d.toDateString()).length
+                    }), 1)
+                    const height = (count / maxCount) * 100
+                    return (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                        <div 
+                          style={{ 
+                            width: '100%', 
+                            background: '#2563eb', 
+                            borderRadius: '4px 4px 0 0',
+                            height: `${height || 5}%`,
+                            transition: 'all 0.3s'
+                          }} 
+                        />
+                        <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 500, marginTop: '8px' }}>{date.getDate()}일</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
 
-function MenuButton({ active, onClick, icon, label }: MenuButtonProps) {
-  return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-bold transition-all duration-200 ${active ? 'bg-zinc-900 text-white shadow-lg shadow-zinc-200 translate-x-1' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600'}`}>
-      {icon}
-      {label}
-    </button>
-  )
-}
-
-interface SectionProps {
-  title: string
-  children: React.ReactNode
-}
-
-function Section({ title, children }: SectionProps) {
-  return (
-    <div className="space-y-4">
-      <h3 className="text-base font-black text-zinc-400 uppercase tracking-[0.2em] px-1">{title}</h3>
-      {children}
-    </div>
-  )
-}
-
-function ShortcutItem({ label, shortcut }: { label: string, shortcut: string }) {
-  const isNotSet = !shortcut;
-  
-  return (
-    <div className="flex items-center justify-between p-5 bg-zinc-50 rounded-2xl border border-zinc-100">
-      <span className="text-lg font-bold text-zinc-700">{label}</span>
-      <div className="flex gap-2">
-        <kbd className={`px-3 py-1.5 border rounded-lg text-sm font-black shadow-sm ${
-          isNotSet 
-            ? 'bg-zinc-100 border-zinc-200 text-zinc-400 italic font-medium' 
-            : 'bg-white border-zinc-200 text-zinc-500'
-        }`}>
-          {isNotSet ? '설정되지 않음' : shortcut}
-        </kbd>
-      </div>
-    </div>
-  )
-}
-
-interface DashboardKPIProps {
-  label: string
-  value: React.ReactNode
-  icon: React.ReactNode
-}
-
-function DashboardKPI({ label, value, icon }: DashboardKPIProps) {
-  return (
-    <div className="p-5 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-2">
-      <div className="flex items-center gap-2 text-sm font-bold text-zinc-400 uppercase tracking-widest">
-        {icon}
-        {label}
-      </div>
-      <div className="text-zinc-900">
-        {typeof value === 'string' ? (
-          <div className="text-2xl font-black">{value}</div>
-        ) : (
-          value
+              {/* Table */}
+              <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                <div style={{ padding: '16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="fa-solid fa-clock-rotate-left"></i> 상세 실행 로그
+                  </div>
+                  <button style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <i className="fa-solid fa-download"></i> 내보내기
+                  </button>
+                </div>
+                <table style={styles.table}>
+                  <thead style={styles.tableHeader}>
+                    <tr>
+                      <th style={styles.th}>일시</th>
+                      <th style={styles.th}>엔진/모델</th>
+                      <th style={styles.th}>작업</th>
+                      <th style={styles.th}>토큰(IN/OUT)</th>
+                      <th style={styles.th}>비용</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLogs.slice(0, 10).map((log, i) => {
+                      const costs = formatCost(log.cost || 0)
+                      return (
+                        <tr key={i}>
+                          <td style={{ ...styles.td, fontSize: '12px', color: '#64748b', fontWeight: 500 }}>
+                            {new Date(log.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td style={styles.td}>
+                            <div style={{ fontWeight: 700, fontSize: '12px', color: '#1e293b', textTransform: 'uppercase' }}>{log.provider}</div>
+                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>{log.model}</div>
+                          </td>
+                          <td style={styles.td}>
+                            <span style={{ 
+                              padding: '4px 8px', 
+                              borderRadius: '6px', 
+                              fontSize: '10px', 
+                              fontWeight: 700,
+                              background: log.task === 'tone-conversion' ? '#eff6ff' : '#faf5ff',
+                              color: log.task === 'tone-conversion' ? '#2563eb' : '#9333ea'
+                            }}>
+                              {log.task === 'tone-conversion' ? '톤 변환' : '번역'}
+                            </span>
+                          </td>
+                          <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: '12px', color: '#64748b' }}>
+                            {log.inputTokens}/{log.outputTokens}
+                          </td>
+                          <td style={styles.td}>
+                            <div style={{ fontWeight: 700, fontSize: '12px', color: '#1e293b' }}>{costs.krw}</div>
+                            <div style={{ fontSize: '9px', color: '#94a3b8' }}>{costs.usd}</div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                    {filteredLogs.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ ...styles.td, textAlign: 'center', padding: '32px', color: '#94a3b8', fontStyle: 'italic' }}>
+                          데이터가 존재하지 않습니다.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </>
         )}
-      </div>
+
+        {/* General Settings */}
+        {activeMenu === 'general' && (
+          <>
+            <section style={styles.settingCard}>
+              <div style={styles.cardHeader}>
+                <div style={styles.cardIcon}>
+                  <i className="fa-solid fa-bullhorn"></i>
+                </div>
+                <div>
+                  <h3 style={styles.cardTitle}>기본 톤 및 개인화</h3>
+                  <p style={styles.cardDescription}>변환 시 가장 우선적으로 적용될 커뮤니케이션 스타일을 선택합니다.</p>
+                </div>
+              </div>
+
+              <div style={styles.checkboxWrapper}>
+                <input 
+                  type="checkbox" 
+                  id="auto-copy" 
+                  checked={autoCopyEnabled} 
+                  onChange={(e) => setAutoCopyEnabledState(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', marginTop: '2px' }}
+                />
+                <div>
+                  <label htmlFor="auto-copy" style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', cursor: 'pointer', display: 'block' }}>
+                    변환 완료 시 결과물 자동 복사
+                  </label>
+                  <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', lineHeight: 1.5, margin: '4px 0 0 0' }}>
+                    팝업에서 톤 변환이 완료되면 즉시 클립보드에 저장합니다.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '24px' }}>
+                <label style={styles.label}>기본 톤 (Default Tone)</label>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                  {TONE_OPTIONS.map((tone) => (
+                    <button
+                      key={tone.key}
+                      onClick={() => setAutoCopyToneState(tone.key)}
+                      style={{
+                        ...styles.optionChip,
+                        ...(autoCopyTone === tone.key ? styles.optionChipActive : {})
+                      }}
+                    >
+                      <span>{tone.emoji}</span>
+                      {tone.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section style={styles.settingCard}>
+              <div style={styles.cardHeader}>
+                <div style={styles.cardIcon}>
+                  <i className="fa-solid fa-keyboard"></i>
+                </div>
+                <div>
+                  <h3 style={styles.cardTitle}>즉시 변환 스타일</h3>
+                  <p style={styles.cardDescription}>텍스트 선택 후 단축키로 즉시 변환할 때 적용되는 스타일입니다.</p>
+                </div>
+              </div>
+
+              <div style={styles.checkboxWrapper}>
+                <i className="fa-solid fa-keyboard" style={{ color: '#94a3b8', fontSize: '20px', marginTop: '2px' }}></i>
+                <div>
+                  <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', margin: 0 }}>즉시 정중한 문장 변환 설정</h4>
+                  <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', lineHeight: 1.5, margin: '4px 0 0 0' }}>
+                    텍스트를 선택하고 단축키(
+                    <kbd style={{ ...styles.kbd, minWidth: 'auto', height: 'auto', padding: '2px 6px', fontSize: '11px', margin: '0 2px' }}>
+                      {commands.find(c => c.name === 'instant-tone-conversion')?.shortcut || '설정되지 않음'}
+                    </kbd>
+                    )를 누르면, 즉시 교체됩니다.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '24px' }}>
+                <label style={styles.label}>적용할 스타일</label>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                  {TONE_OPTIONS.map((tone) => (
+                    <button
+                      key={tone.key}
+                      onClick={() => setInstantToneStyleState(tone.key)}
+                      style={{
+                        ...styles.optionChip,
+                        ...(instantToneStyle === tone.key ? styles.optionChipActive : {})
+                      }}
+                    >
+                      <span>{tone.emoji}</span>
+                      {tone.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* AI Intelligence */}
+        {activeMenu === 'ai-intelligence' && (
+          <section style={styles.aiIntelligenceCard}>
+            <div style={styles.cardHeader}>
+              <div style={{ ...styles.cardIcon, ...styles.cardIconBlue }}>
+                <i className="fa-solid fa-sparkles"></i>
+              </div>
+              <div>
+                <h3 style={styles.cardTitle}>✨ AI 비즈니스 프로필 최적화</h3>
+                <p style={styles.cardDescription}>Gemini AI가 당신의 직무에 최적화된 커뮤니케이션 가이드를 생성합니다.</p>
+              </div>
+            </div>
+
+            <div>
+              <label style={styles.label}>내 직무 및 상황 설명</label>
+              <textarea 
+                value={workDescription}
+                onChange={(e) => setWorkDescription(e.target.value)}
+                placeholder="예: '외국계 IT 기업의 프로젝트 매니저입니다. 주로 정중하면서도 명확한 업무 지시와 일정 조율이 필요합니다.'"
+                style={{ ...styles.inputBox, minHeight: '96px', resize: 'vertical' }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#3b82f6'
+                  e.currentTarget.style.background = '#ffffff'
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#e2e8f0'
+                  e.currentTarget.style.background = '#f8fafc'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+              <div style={{ flex: 1 }}>
+                {aiOptimizeStatus === 'loading' && (
+                  <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '16px', height: '16px', border: '2px solid #dbeafe', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                    AI가 최적의 프로필을 분석 중입니다...
+                  </div>
+                )}
+                {aiOptimizeError && (
+                  <div style={{ fontSize: '12px', color: '#dc2626', fontWeight: 500 }}>{aiOptimizeError}</div>
+                )}
+              </div>
+              <button
+                onClick={handleAiOptimize}
+                disabled={aiOptimizeStatus === 'loading'}
+                style={{
+                  background: '#2563eb',
+                  color: '#ffffff',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  opacity: aiOptimizeStatus === 'loading' ? 0.7 : 1,
+                }}
+                onMouseEnter={(e) => { if (aiOptimizeStatus !== 'loading') e.currentTarget.style.background = '#1d4ed8' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#2563eb' }}
+              >
+                ✨ AI로 프로필 최적화하기
+              </button>
+            </div>
+
+            {aiOptimizeResult && (
+              <div style={{ marginTop: '16px', padding: '16px', background: '#ffffff', border: '1px solid #dbeafe', borderRadius: '12px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                  추천 시스템 프롬프트
+                </div>
+                <div style={{ fontSize: '14px', color: '#334155', lineHeight: 1.6, fontStyle: 'italic' }}>
+                  {aiOptimizeResult}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Translation Settings */}
+        {activeMenu === 'translation' && (
+          <section style={styles.settingCard}>
+            <div style={styles.cardHeader}>
+              <div style={styles.cardIcon}>
+                <i className="fa-solid fa-language"></i>
+              </div>
+              <div>
+                <h3 style={styles.cardTitle}>번역 엔진 설정</h3>
+                <p style={styles.cardDescription}>기본 번역 언어 및 옵션을 설정합니다.</p>
+              </div>
+            </div>
+
+            <div>
+              <label style={styles.label}>기본 타겟 언어</label>
+              <select 
+                value={targetLang} 
+                onChange={(e) => setTargetLang(e.target.value as TargetLanguage)}
+                style={styles.select}
+              >
+                <option value="ko">한국어 (Korean)</option>
+                <option value="en">영어 (English)</option>
+                <option value="ja">일본어 (Japanese)</option>
+                <option value="zh-CN">중국어 (Chinese)</option>
+              </select>
+              <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
+                단축키를 통한 즉시 번역 시 이 언어가 기본값으로 사용됩니다.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {/* Shortcuts Settings */}
+        {activeMenu === 'shortcuts' && (
+          <section style={styles.settingCard}>
+            <div style={styles.cardHeader}>
+              <div style={styles.cardIcon}>
+                <i className="fa-solid fa-keyboard"></i>
+              </div>
+              <div>
+                <h3 style={styles.cardTitle}>시스템 단축키 안내</h3>
+                <p style={styles.cardDescription}>BCA에서 사용할 수 있는 키보드 단축키입니다.</p>
+              </div>
+            </div>
+
+            <div>
+              {[
+                { name: '_execute_action', label: '팝업 열기 (클립보드 톤 변환)' },
+                { name: 'tone-conversion', label: '클립보드 텍스트를 정중한 문장으로 변환 (팝업)' },
+                { name: 'instant-translation', label: '선택한 텍스트 즉시 번역' },
+                { name: 'instant-tone-conversion', label: '선택한 텍스트 즉시 정중한 문장 변환' },
+              ].map((item) => {
+                const cmd = commands.find(c => c.name === item.name)
+                const isSet = !!cmd?.shortcut
+                const keys = parseShortcut(cmd?.shortcut || '')
+
+                return (
+                  <div 
+                    key={item.name}
+                    style={{
+                      ...styles.shortcutItem,
+                      ...(isSet ? styles.shortcutSet : styles.shortcutNotSet)
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ 
+                        width: '28px', 
+                        height: '28px', 
+                        borderRadius: '8px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        background: isSet ? '#d1fae5' : '#fef3c7',
+                        color: isSet ? '#059669' : '#d97706'
+                      }}>
+                        {isSet ? (
+                          <i className="fa-solid fa-check" style={{ fontSize: '12px' }}></i>
+                        ) : (
+                          <i className="fa-solid fa-exclamation-triangle" style={{ fontSize: '12px' }}></i>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: isSet ? '#334155' : '#92400e' }}>
+                        {item.label}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {isSet ? (
+                        keys.map((key, index) => (
+                          <span key={index} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <kbd style={styles.kbd}>{key}</kbd>
+                            {index < keys.length - 1 && (
+                              <span style={{ color: '#cbd5e1', fontSize: '12px', fontWeight: 500 }}>+</span>
+                            )}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ 
+                          padding: '6px 12px', 
+                          background: 'rgba(254, 243, 199, 0.8)', 
+                          border: '1px solid #fcd34d', 
+                          borderRadius: '8px', 
+                          fontSize: '12px', 
+                          fontWeight: 600, 
+                          color: '#92400e',
+                          fontStyle: 'italic'
+                        }}>
+                          설정되지 않음
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div style={styles.proTipBox}>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#bfdbfe', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="fa-solid fa-keyboard"></i> Pro Tip
+                </div>
+                <p style={{ fontSize: '14px', fontWeight: 500, lineHeight: 1.5, margin: 0 }}>
+                  단축키가 다른 앱과 충돌하나요? 크롬 설정에서 자유롭게 변경할 수 있습니다.
+                </p>
+              </div>
+              <button
+                onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
+                style={{
+                  background: '#ffffff',
+                  color: '#2563eb',
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  flexShrink: 0,
+                }}
+              >
+                단축키 설정 바로가기
+                <i className="fa-solid fa-external-link-alt" style={{ fontSize: '10px' }}></i>
+              </button>
+            </div>
+          </section>
+        )}
+      </main>
+
+      {/* Global Styles */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }
