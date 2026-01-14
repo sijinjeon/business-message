@@ -1,4 +1,4 @@
-# 정중한 문장 도우미 (BCA Assistant) - v2.5.1 (2026)
+# 정중한 문장 도우미 (BCA Assistant) - v2.5.2 (2026)
 
 **비즈니스 메시지 작성의 새로운 기준.**  
 복사한 문장을 AI를 통해 정중한 비즈니스 표현으로 변환하거나, 웹페이지에서 선택한 텍스트를 즉시 번역/대체해주는 강력한 Chrome Extension입니다.
@@ -58,6 +58,15 @@ business-message/
 ├── images/                 # 확장 프로그램 아이콘
 └── business-message-extension/  # 빌드 결과물
 ```
+
+---
+
+## 🔄 v2.5.2 변경사항 (2026.01.14)
+
+### 개인정보처리방침 추가
+- Chrome 웹 스토어 정책 준수를 위한 개인정보처리방침 문서 추가
+- 한국어/영문 버전 동시 제공 (`docs/privacy-policy.html`, `docs/privacy-policy-en.html`)
+- GitHub Pages 호스팅 지원
 
 ---
 
@@ -176,7 +185,21 @@ npm run type-check  # TypeScript 타입 체크
 
 ---
 
-## 🛡️ 개인정보 처리 방침
+## 🛡️ 개인정보처리방침
+
+📄 **[개인정보처리방침 전문 보기 (한국어)](./docs/privacy-policy.html)** | **[Privacy Policy (English)](./docs/privacy-policy-en.html)**
+
+### 요약
+
+| 항목 | 내용 |
+|------|------|
+| 서버 저장 | ❌ 없음 (모든 데이터는 로컬에만 저장) |
+| 개인정보 수집 | ❌ 없음 (이름, 이메일 등 개인 식별 정보 수집 안 함) |
+| 데이터 판매 | ❌ 없음 |
+| API 키 보호 | ✅ AES-GCM 256-bit 암호화 |
+| 사용자 데이터 제어 | ✅ 완전한 로컬 제어 |
+
+### 상세 내용
 
 - 사용자의 API 키는 브라우저 내부 저장소(`chrome.storage.local`)에 **AES-GCM 256-bit**로 암호화되어 저장됩니다.
 - 입력한 텍스트는 AI 처리를 위해 각 API 엔드포인트로 전송되며, **당사 서버에는 어떠한 정보도 저장되지 않습니다**.
@@ -205,4 +228,4 @@ MIT License
 ---
 
 **Made with ❤️ by SIREAL**  
-**최종 업데이트**: 2026-01-12
+**최종 업데이트**: 2026-01-14
