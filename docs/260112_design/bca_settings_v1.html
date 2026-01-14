@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BCA Settings - Nexus AI Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+    
+    body {
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+      background-color: #f8fafc; /* slate-50 */
+    }
+
+    .sidebar-item.active {
+      background-color: #eff6ff;
+      color: #2563eb;
+      border-right: 3px solid #2563eb;
+    }
+
+    .setting-card {
+      background: #ffffff;
+      border-radius: 1rem;
+      border: 1px solid #f1f5f9;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+    }
+
+    .input-box-shared {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .input-box-shared:focus {
+      border-color: #3b82f6;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .option-chip {
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border: 1px solid #e2e8f0;
+      border-radius: 9999px;
+      transition: all 0.2s;
+    }
+
+    .option-chip.active {
+      background-color: #eff6ff;
+      border-color: #3b82f6;
+      color: #1d4ed8;
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #3b82f6;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="min-h-screen flex">
+
+  <!-- Sidebar (Navigation) -->
+  <aside class="w-64 bg-white border-r border-slate-100 flex flex-col sticky top-0 h-screen">
+    <div class="p-6 flex items-center gap-3">
+      <div class="bg-blue-600 p-1.5 rounded-lg shadow-blue-200 shadow-lg">
+        <i class="fa-solid fa-wand-magic-sparkles text-white"></i>
+      </div>
+      <span class="font-bold text-slate-800 tracking-tight">Nexus AI <span class="text-blue-600">BCA</span></span>
+    </div>
+    
+    <nav class="flex-1 px-4 space-y-1">
+      <a href="#" class="sidebar-item active flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+        <i class="fa-solid fa-microchip w-5 text-center"></i> AI 모델 설정
+      </a>
+      <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all">
+        <i class="fa-solid fa-sliders w-5 text-center"></i> 개인화 선호도
+      </a>
+      <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all">
+        <i class="fa-solid fa-sparkles w-5 text-center"></i> ✨ AI 인텔리전스
+      </a>
+      <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all">
+        <i class="fa-solid fa-link w-5 text-center"></i> 외부 연동 (Notion)
+      </a>
+      <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all">
+        <i class="fa-solid fa-keyboard w-5 text-center"></i> 단축키 가이드
+      </a>
+    </nav>
+
+    <div class="p-6 border-t border-slate-50 text-[11px] text-slate-400">
+      <p>© 2026 Nexus AI Studio</p>
+      <p>Version 2.5.1 Stable</p>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-10 max-w-5xl">
+    <header class="mb-10 flex justify-between items-end">
+      <div>
+        <h2 class="text-3xl font-bold text-slate-800 mb-2">설정 (Settings)</h2>
+        <p class="text-slate-500">AI 모델 연동 및 커뮤니케이션 스타일을 개인화하십시오.</p>
+      </div>
+      <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-100 transition-all">
+        변경 사항 저장
+      </button>
+    </header>
+
+    <div class="space-y-8">
+      
+      <!-- Section 1: AI API Configuration -->
+      <section class="setting-card p-8">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800">API 연동 관리</h3>
+            <p class="text-xs text-slate-400 font-medium">서비스를 구동하기 위한 AI 모델의 API 키를 설정합니다.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">OpenAI API Key</label>
+            <input type="password" id="openai-key" class="input-box-shared" placeholder="sk-xxxx...">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Google Gemini Key</label>
+            <input type="password" id="gemini-key" class="input-box-shared" placeholder="AIzaSy...">
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: ✨ AI Intelligence Feature -->
+      <section class="setting-card p-8 bg-gradient-to-br from-white to-blue-50/30 border-blue-100 border-2">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-200">
+            <i class="fa-solid fa-sparkles"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800">✨ AI 비즈니스 프로필 최적화</h3>
+            <p class="text-xs text-slate-400 font-medium">Gemini AI가 당신의 직무에 최적화된 커뮤니케이션 가이드를 생성합니다.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">내 직무 및 상황 설명</label>
+            <textarea id="work-description" class="input-box-shared h-24" placeholder="예: '외국계 IT 기업의 프로젝트 매니저입니다. 주로 정중하면서도 명확한 업무 지시와 일정 조율이 필요합니다.'"></textarea>
+          </div>
+          
+          <div class="flex justify-between items-center">
+            <div id="ai-status" class="text-xs text-blue-600 font-medium hidden">
+              <span class="spinner mr-2"></span> AI가 최적의 프로필을 분석 중입니다...
+            </div>
+            <div id="ai-error" class="text-xs text-red-500 font-medium hidden"></div>
+            <button id="btn-optimize" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2">
+              ✨ AI로 프로필 최적화하기
+            </button>
+          </div>
+
+          <div id="ai-result-area" class="mt-4 p-4 bg-white border border-blue-100 rounded-xl hidden animate-in fade-in slide-in-from-top-2">
+             <div class="text-[11px] font-bold text-blue-600 uppercase tracking-widest mb-2">추천 시스템 프롬프트</div>
+             <div id="ai-result-text" class="text-sm text-slate-700 leading-relaxed italic"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Default Tone Preference -->
+      <section class="setting-card p-8">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600">
+            <i class="fa-solid fa-bullhorn"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800">기본 톤 및 개인화</h3>
+            <p class="text-xs text-slate-400 font-medium">변환 시 가장 우선적으로 적용될 커뮤니케이션 스타일을 선택합니다.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">기본 톤 (Default Tone)</label>
+          <div id="tone-selector" class="flex gap-3">
+            <button class="option-chip active flex items-center gap-2">
+              <span>💼</span> 비즈니스 (격식)
+            </button>
+            <button class="option-chip flex items-center gap-2 hover:bg-slate-50">
+              <span>🏢</span> 사내 협업
+            </button>
+            <button class="option-chip flex items-center gap-2 hover:bg-slate-50">
+              <span>😊</span> 캐주얼
+            </button>
+            <button class="option-chip flex items-center gap-2 hover:bg-slate-50">
+              <span>✨</span> AI 자동 최적화
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: Integration (Notion) -->
+      <section class="setting-card p-8 border-dashed border-2 border-slate-200 bg-slate-50/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center">
+              <i class="fa-brands fa-notion text-xl text-slate-800"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-800">Notion 워크스페이스 연동</h3>
+              <p class="text-xs text-slate-400">변환 기록을 노션 데이터베이스로 즉시 전송합니다.</p>
+            </div>
+          </div>
+          <button class="px-5 py-2 text-xs font-bold border border-slate-200 bg-white rounded-lg hover:bg-slate-50 transition-all">
+            연결하기
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    // Constants for Gemini API
+    const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
+    const apiKey = ""; // Runtime provides this via environment
+
+    // Sidebar active state toggle
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active', 'text-slate-800'));
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.add('text-slate-500'));
+        this.classList.add('active');
+        this.classList.remove('text-slate-500');
+        this.classList.add('text-slate-800');
+      });
+    });
+
+    // Chip selection logic
+    document.querySelectorAll('.option-chip').forEach(chip => {
+      chip.addEventListener('click', function() {
+        this.parentElement.querySelectorAll('.option-chip').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // --- Gemini API Logic ---
+
+    async function callGemini(promptText) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+      const payload = {
+        contents: [{ parts: [{ text: promptText }] }],
+        systemInstruction: { parts: [{ text: "당신은 비즈니스 커뮤니케이션 전문가입니다. 사용자의 직무 설명을 바탕으로, 해당 사용자에게 가장 적합한 AI 시스템 프롬프트와 페르소나를 한 문장으로 생성하십시오. 출력은 따옴표 없이 한국어로만 작성하세요." }] }
+      };
+
+      let delay = 1000;
+      for (let i = 0; i < 5; i++) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) throw new Error('Network response was not ok');
+          
+          const result = await response.json();
+          return result.candidates?.[0]?.content?.parts?.[0]?.text;
+        } catch (error) {
+          if (i === 4) throw error;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+        }
+      }
+    }
+
+    const btnOptimize = document.getElementById('btn-optimize');
+    const workDesc = document.getElementById('work-description');
+    const aiStatus = document.getElementById('ai-status');
+    const aiError = document.getElementById('ai-error');
+    const aiResultArea = document.getElementById('ai-result-area');
+    const aiResultText = document.getElementById('ai-result-text');
+
+    btnOptimize.addEventListener('click', async () => {
+      const desc = workDesc.value.trim();
+      if (!desc) {
+        showError("직무 설명을 입력해주세요.");
+        return;
+      }
+
+      // Reset states
+      aiStatus.classList.remove('hidden');
+      aiError.classList.add('hidden');
+      aiResultArea.classList.add('hidden');
+      btnOptimize.disabled = true;
+
+      try {
+        const result = await callGemini(desc);
+        if (result) {
+          aiResultText.innerText = result;
+          aiResultArea.classList.remove('hidden');
+        } else {
+          throw new Error("결과를 생성할 수 없습니다.");
+        }
+      } catch (err) {
+        showError("AI 연결 중 오류가 발생했습니다. 다시 시도해주세요.");
+      } finally {
+        aiStatus.classList.add('hidden');
+        btnOptimize.disabled = false;
+      }
+    });
+
+    function showError(msg) {
+      aiError.innerText = msg;
+      aiError.classList.remove('hidden');
+    }
+
+  </script>
+</body>
+</html>

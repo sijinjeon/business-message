@@ -204,5 +204,5 @@ MIT License
 
 ---
 
-**Made with ❤️ by BCA Team**  
+**Made with ❤️ by SIREAL**  
 **최종 업데이트**: 2026-01-12
